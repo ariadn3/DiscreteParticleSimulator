@@ -40,7 +40,7 @@ params_t* read_file() {
 
     // Otherwise randomise the initial positions and velocities
     if (!isInitialised) {
-        randomiseParticle(particles, p->n, p->l, p->r);
+        randomiseParticles(particles, p->n, p->l, p->r);
     }
 
     return p;
