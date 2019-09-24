@@ -1,3 +1,5 @@
+#include <stdbool.h>
+
 #include "particle.h"
 
 typedef struct params_t {
@@ -5,9 +7,9 @@ typedef struct params_t {
     double l;
     double r;
     int s;
-    char* type;
+    bool willPrint;
     particle_t** particles;
 } params_t;
 
-params_t* params(int, double, double, int, char*, particle_t**);
+params_t* params();
 void free_params(params_t*);
