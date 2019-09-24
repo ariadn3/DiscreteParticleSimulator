@@ -20,7 +20,7 @@ void free_collision(collision_t* collision) {
 
 // Returns a C string with the details of this collision
 char* collision_string(collision_t* c) {
-    char* details = (char*) (malloc(sizeof(char) * 80));
+    char* details = (char*) (malloc(sizeof(char) * 120));
     
     sprintf(details, "Collision between particles with ids: %d and %d @ %.14f",
         c->p->id, c->q->id, c->time);

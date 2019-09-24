@@ -20,7 +20,7 @@ void free_particle(particle_t* particle) {
 
 // Returns a C string with the details of this particle
 char* particle_string(particle_t* p) {
-    char* details = (char*) (malloc(sizeof(char) * 80));
+    char* details = (char*) (malloc(sizeof(char) * 140));
     
     sprintf(details, "%d %.14f %.14lf %.14f %.14f\n", p->id, p->x, p->y, p->v_x, p->v_y);
     return details;
