@@ -1,3 +1,6 @@
+#ifndef COLLISION_H
+#define COLLISION_H
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -10,6 +13,8 @@ typedef struct collision_t {
     double time;
 } collision_t;
 
-collision_t* collision(particle_t*, particle_t*, double);
+collision_t* build_collision(particle_t*, particle_t*, double);
 void free_collision(collision_t*);
 char* collision_string(collision_t*);
+
+#endif

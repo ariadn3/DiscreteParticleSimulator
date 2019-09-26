@@ -55,9 +55,3 @@ params_t* read_file() {
 void write_file() {
     return;
 }
-
-int main() {
-    params_t* params = read_file();
-    printf("%d\n", params->n);
-    printf("%s", particle_string(params->particles[0]));
-}
