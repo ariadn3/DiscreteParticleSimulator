@@ -4,7 +4,7 @@
 void resolveValidCollisions(collision_t** collisionArray, int* numCollisions, double L, double r) {
 	collision_t* curCollision;
 	for (int i = 0; i < *numCollisions; i++) {
-		curCollision = collisionArray[i];
+        curCollision = collisionArray[i];
 		settleCollision(curCollision, L, r);
 		free_collision(curCollision);
 	}
@@ -15,10 +15,13 @@ void resolveValidCollisions(collision_t** collisionArray, int* numCollisions, do
 void updateParticles(particle_t** particleArray, int N, bool* hasCollided) {
 	particle_t* curParticle;
 	for (int i = 0; i < N; i++) {
-		if (!hasCollided[i]) {
+		curParticle = particleArray[i];
+        if (!hasCollided[i]) {
 			curParticle->x += curParticle->v_x;
 			curParticle->y += curParticle->v_y;
-		}
+		} else {
+            hasCollided[i] = false;
+        }
 	}
 	return;
 }
@@ -30,14 +33,15 @@ void settleCollision(collision_t* curCollision, double L, double r) {
 	particleA = curCollision->p;
 	particleB = curCollision->q;
 	double time = curCollision->time;
-
+    
 	particleA->x += time * particleA->v_x;
 	particleA->y += time * particleA->v_y;
 	// If the collision is against the wall, toggle directions
 	if (particleB == NULL) {
-		if (particleA->x < r + _EDGE_TOLERANCE || particleA->x > L - r - _EDGE_TOLERANCE)
-			particleA->v_x *= -1;
-		if (particleA->y < r + _EDGE_TOLERANCE || particleA->y > L - r - _EDGE_TOLERANCE)
+		if (particleA->x <= r + _EDGE_TOLERANCE || particleA->x >= L - r - _EDGE_TOLERANCE) {
+            particleA->v_x *= -1;
+        }
+		if (particleA->y <= r + _EDGE_TOLERANCE || particleA->y >= L - r - _EDGE_TOLERANCE)
 			particleA->v_y *= -1;
 	}
 	// If collision is against another particle
@@ -95,8 +99,7 @@ void settleCollision(collision_t* curCollision, double L, double r) {
 	else if (particleA->y + time_ay*particleA->v_y > L-r)
 		time_ay = (L-r-particleA->y)/particleA->v_y;
 	double time_a = (time_ax < time_ay)? time_ax : time_ay;
-	
 	particleA->x += time_a * particleA->v_x;
 	particleA->y += time_a * particleA->v_y;
-	return;
+    return;
 }

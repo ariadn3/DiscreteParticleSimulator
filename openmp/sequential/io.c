@@ -11,9 +11,9 @@ params_t* read_file() {
     scanf("%s\n", buffer);
 
     // Determine if this simulation will run in 'print' or 'perf' mode
-    if(strcmp(buffer, "print")) {
+    if(strcmp(buffer, "print") == 0) {
         p->willPrint = true;
-    } else if (strcmp(buffer, "perf")) {
+    } else if (strcmp(buffer, "perf") == 0) {
         p->willPrint = false;
     } else {
         printf("Neither 'print' or 'perf' words are present in input. Exiting...\n");
@@ -42,6 +42,11 @@ params_t* read_file() {
     return p;
 }
 
-void write_file() {
-    return;
+void printAll(int n, int t, particle_t** particles) {
+    // Parallelise this
+    for (int i = 0; i < n; i++) {
+        char* details = particle_string(particles[i]);
+        printf("%d %s", t, details);
+        free(details);
+    }
 }
