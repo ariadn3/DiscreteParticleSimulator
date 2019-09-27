@@ -2,13 +2,15 @@
 
 // Filters the collisions according to the time that it took place
 void filterCollisions(collision_t** collisionArray, bool* hasCollided, int* numCollisions) {
-	int saveIndex = 0;
+	qsort(collisionArray, *numCollisions, sizeof(collision_t*), &cmpCollision);
+    int saveIndex = 0;
 
 	collision_t* curCollision;
 	for (int curIndex = 0; curIndex < *numCollisions; curIndex++) {
 		curCollision = collisionArray[curIndex];
-		if (hasCollided[curCollision->p->id] || (curCollision->q != NULL && hasCollided[curCollision->q->id])) {
-			free_collision(curCollision);
+        if (hasCollided[curCollision->p->id]
+            || (curCollision->q != NULL && hasCollided[curCollision->q->id])) {
+            free_collision(curCollision);
 		}
 		else {
 			hasCollided[curCollision->p->id] = true;
