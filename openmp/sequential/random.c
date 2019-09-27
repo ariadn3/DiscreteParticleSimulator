@@ -22,8 +22,20 @@ double* generatePosition(int n, double L, double r) {
     }
 
     double leftLimit = r, rightLimit = L-r, lenDiff = rightLimit - leftLimit;
-    for (int i = 0; i < 2*n; i++)
-        posArray[i] = leftLimit + lenDiff*(rand()/(double)RAND_MAX);
+    for (int i = 0; i < n; i++) {
+    	while (true) {
+	        posArray[2*i] = leftLimit + lenDiff*(rand()/(double)RAND_MAX);
+	        posArray[2*i+1] = leftLimit + lenDiff*(rand()/(double)RAND_MAX);
+	        bool flag = true;
+	        for (int j = 0; j < i; j++) {
+	        	if (sqrt(pow(posArray[2*i] -posArray[2*j], 2) + pow(posArray[2*i+1] - posArray[2*j+1], 2)) < 2*r) {
+	        		flag = false;
+	        		break;
+	        	}
+	        }
+	        if (flag) break;
+	    }
+	}
 
     return posArray;
 }
@@ -33,7 +45,7 @@ double* generateVelocity(int n, double L, double r) {
     static double* veloArray;
     veloArray = (double*) malloc(n*2*sizeof(double));
 
-    double veloLeftLimit = L/(8*r), veloRightLimit = L/4, veloDiff = veloRightLimit - veloLeftLimit;
+    double veloLeftLimit = L/(8*r*_SLOW_FACTOR), veloRightLimit = L/(4*_SLOW_FACTOR), veloDiff = veloRightLimit - veloLeftLimit;
     double angleLeftLimit = 0, angleRightLimit = 2*M_PI, angleDiff = angleRightLimit - angleLeftLimit;
     double velo, angle;
     for (int i = 0; i < n; i++) {

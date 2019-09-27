@@ -26,7 +26,7 @@ void simulate() {
     int n = params->n;
     double l = params->l;
     double r = params->r;
-    int s = params->s;
+    int s = params->s*SLOW_FACTOR;
     bool willPrint = params->willPrint;
     particle_t** ps = params->particles;
 
@@ -135,10 +135,10 @@ double checkCollision(double r, particle_t* p, particle_t* q) {
 
     double A = dVxS + dVyS;
     double B = 2 * (dX * dVx + dY * dVy);
-    double C = dXS + dYS;
+    double C = dXS + dYS - 4*r*r;
 
     double discriminant = B * B - 4 * A * C;
-    
+
     if (discriminant <= 0) {
         return 2;
     }
