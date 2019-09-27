@@ -1,13 +1,4 @@
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
-#include <unistd.h>
-
-#include "params.h"
-#include "random.h"
-
-params_t* read_file(void);
-void write_file(void);
+#include "io.h"
 
 // Read in inputs from file and return initial simulation parameters as params_t
 params_t* read_file() {
@@ -26,7 +17,6 @@ params_t* read_file() {
         p->willPrint = false;
     } else {
         printf("Neither 'print' or 'perf' words are present in input. Exiting...\n");
-        sleep(1);
         exit(1);
     }
 
