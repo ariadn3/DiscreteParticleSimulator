@@ -1,5 +1,7 @@
 #!/bin/bash
 
+python3 generateTestcases.py
+
 TOTAL_RUNS=5
 
 rm *.seq -f
