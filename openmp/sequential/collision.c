@@ -7,7 +7,7 @@ collision_t* build_collision(particle_t* p, particle_t* q, double time) {
     collision->p = p;
     collision->q = q;
     collision->time = time;
-    
+
     return collision;
 }
 
@@ -21,8 +21,8 @@ void free_collision(collision_t* collision) {
 // Returns a C string with the details of this collision
 char* collision_string(collision_t* c) {
     char* details = (char*) (malloc(sizeof(char) * 120));
-    
+
     sprintf(details, "Collision between particles with ids: %d and %d @ %.14f",
-        c->p->id, c->q->id, c->time);
+            c->p->id, c->q->id, c->time);
     return details;
 }

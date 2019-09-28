@@ -23,7 +23,7 @@ params_t* read_file(int slowFactor) {
     double x, y, v_x, v_y;
     bool isInitialised = false;
     particle_t** particles = (particle_t**) malloc(p->n * sizeof(particle_t));
-    
+
     // If initial positions and velocities of particles are provided, read them
     while (fgets(buffer, 140, stdin) != NULL) {
         isInitialised = true;

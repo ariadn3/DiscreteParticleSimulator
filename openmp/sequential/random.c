@@ -7,7 +7,7 @@ void randomiseParticles(particle_t** particleArray, int slowFactor, int n, doubl
     double* veloArray = generateVelocity(slowFactor, n, L, r);
     for (int i = 0; i < n; i++) {
         particleArray[i] = build_particle(i, posArray[2 * i], posArray[2 * i + 1],
-        veloArray[2 * i], veloArray[2 * i + 1]);
+                veloArray[2 * i], veloArray[2 * i + 1]);
     }
     free(posArray);
     free(veloArray);
@@ -29,20 +29,20 @@ double* generatePosition(int n, double L, double r) {
 
     double leftLimit = r, rightLimit = L - r, lenDiff = rightLimit - leftLimit;
     for (int i = 0; i < n; i++) {
-    	while (true) {
-	        posArray[2 * i] = leftLimit + lenDiff * (rand() / (double)RAND_MAX);
-	        posArray[2 * i +1] = leftLimit + lenDiff * (rand() / (double)RAND_MAX);
-	        bool flag = true;
-	        for (int j = 0; j < i; j++) {
-	        	if (sqrt(pow(posArray[2 * i] - posArray[2 * j], 2)
-                    + pow(posArray[2 * i + 1] - posArray[2 * j + 1], 2)) < 2 * r) {
-	        		flag = false;
-	        		break;
-	        	}
-	        }
-	        if (flag) break;
-	    }
-	}
+        while (true) {
+            posArray[2 * i] = leftLimit + lenDiff * (rand() / (double)RAND_MAX);
+            posArray[2 * i +1] = leftLimit + lenDiff * (rand() / (double)RAND_MAX);
+            bool flag = true;
+            for (int j = 0; j < i; j++) {
+                if (2 * r > sqrt(pow(posArray[2 * i] - posArray[2 * j], 2)
+                            + pow(posArray[2 * i + 1] - posArray[2 * j + 1], 2))) {
+                    flag = false;
+                    break;
+                }
+            }
+            if (flag) break;
+        }
+    }
 
     return posArray;
 }
@@ -58,6 +58,7 @@ double* generateVelocity(int slowFactor, int n, double L, double r) {
     double angleLeftLimit = 0, angleRightLimit = 2 * M_PI;
     double angleDiff = angleRightLimit - angleLeftLimit;
     double velo, angle;
+
     for (int i = 0; i < n; i++) {
         velo = veloLeftLimit + veloDiff * (rand() / (double)RAND_MAX);
         angle = angleLeftLimit + angleDiff * (rand() / (double)RAND_MAX);

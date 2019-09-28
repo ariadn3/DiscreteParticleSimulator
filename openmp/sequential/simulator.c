@@ -20,7 +20,7 @@ int main() {
 
 void simulate() {
     params_t* params = read_file(SLOW_FACTOR);
-    
+
     if (DEBUG_LEVEL > 3) {
         printf("%d %lf %lf %d\n", params->n, params->l, params->r, params->s);
         printf("Simulation printing: %d\n", params->willPrint);
@@ -34,7 +34,7 @@ void simulate() {
     particle_t** ps = params->particles;
 
     printAll(n, 0, ps);
-    
+
     int* numCollisions = (int*) malloc(sizeof(int));
     bool* states = (bool*) malloc(sizeof(bool) * n);
     for (int i = 0; i < n; i++) {
@@ -52,7 +52,7 @@ void simulate() {
             double wallTime = checkWallCollision(r, l, ps[p]);
             if (DEBUG_LEVEL > 2)
                 printf("Particle %d collides with wall at %lf\n", p, wallTime);
-            
+
             if (wallTime != NO_COLLISION) {
                 collision_t* candidate = build_collision(ps[p], NULL, wallTime);
                 // #pragma CS
@@ -60,50 +60,50 @@ void simulate() {
                 (*numCollisions)++;
                 // #end CS
             }
-            
+
             for (int q = p + 1; q < n; q++) {
                 if (DEBUG_LEVEL > 2) printf("Particle %d is q\n", q);
                 double time = checkCollision(r, ps[p], ps[q]);
-                
+
                 if (time != NO_COLLISION) {
                     collision_t* candidate = build_collision(ps[p], ps[q], time);
                     // #pragma CS
                     cs[*numCollisions] = candidate;
                     (*numCollisions)++;
                     // #end CS
-                   }
+                }
             }
         }
 
         if (DEBUG_LEVEL > 1) printf("%d collisions for step %d", *numCollisions, step);
-        
+
         // ===== FILTER COLLISION CANDIDATES TO VALID COLLISION =====
         filterCollisions(cs, states, numCollisions);
         if (DEBUG_LEVEL > 3) printf("FILTER\n");
 
         // ===== RESOLVE VALID COLLISIONS =====
         resolveValidCollisions(cs, numCollisions, l, r);
-        
+
         if (DEBUG_LEVEL > 2) {
             for (int i = 0; i < *numCollisions; i++) {
                 printf("%s\n", collision_string(cs[i]));
             }
         }
-        
+
         updateParticles(ps, n, states);
         if (DEBUG_LEVEL > 3) printf("UPDATE PARTICLES\n");
-        
+
         // ===== PRINT =====
         if (willPrint || step == s) printAll(n, step, ps);
     }
-    
+
     if (DEBUG_LEVEL > 3) printf("SIMULATION COMPLETE\n");
 }
 
 double checkWallCollision(double r, double l, particle_t* p) {    
     // Collision times with vertical and horizontal walls
-    double x_time = 2;
-    double y_time = 2;
+    double x_time = NO_COLLISION;
+    double y_time = NO_COLLISION;
 
     double margin = r + EDGE_TOLERANCE;
     double x1 = p->x + p->v_x;
@@ -115,14 +115,14 @@ double checkWallCollision(double r, double l, particle_t* p) {
     } else if (x1 > l - margin) {
         x_time = (l - r - p->x) / (p->v_x);
     }
-    
+
     // HORIZONTAL WALLS
     if (y1 < margin) {
         y_time = (p->y - r) / -(p->v_y);
     } else if (y1 > l - margin) {
         y_time = (l - r - p->y) / (p->v_y);
     }
-    
+
     // printf("%lf %lf %lf %lf\n", x_time, y_time, x1, y1);
     return x_time < y_time ? x_time : y_time;
 }
@@ -143,7 +143,7 @@ double checkCollision(double r, particle_t* p, particle_t* q) {
     if (discriminant <= 0) {
         return NO_COLLISION;
     }
-    
+
     // If particles collide, distance curve y = d(t) is concave down and intersects
     // y = 2r -> compute the first (smaller) root only
     double t = (-B - sqrt(discriminant)) / 2 / A;
