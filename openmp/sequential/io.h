@@ -6,6 +6,6 @@
 #include "particle.h"
 #include "random.h"
 
-params_t* read_file(void);
-void printAll(int n, int t, particle_t**);
+params_t* read_file(int slowFactor);
+void printAll(int, int, particle_t**);
 

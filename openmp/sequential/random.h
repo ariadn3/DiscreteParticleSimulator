@@ -5,9 +5,8 @@
 
 #include "particle.h"
 
-#define _SEED 3210
-#define _SLOW_FACTOR 1
+#define SEED 3210
 
-void randomiseParticles(particle_t** particleArray, int n, double L, double r);
-double* generatePosition(int n, double L, double r);
-double* generateVelocity(int n, double L, double r);
+void randomiseParticles(particle_t**, int, int, double, double);
+double* generatePosition(int, double, double);
+double* generateVelocity(int, int, double, double);

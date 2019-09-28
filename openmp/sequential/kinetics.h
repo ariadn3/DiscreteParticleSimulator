@@ -6,8 +6,8 @@
 #include "particle.h"
 #include "collision.h"
 
-#define _EDGE_TOLERANCE 1e-14
+#define EDGE_TOLERANCE 1e-14
 
-void resolveValidCollisions(collision_t** collisionArray, int* numCollisions, double L, double r);
-void updateParticles(particle_t** particleArray, int N, bool* hasCollided);
-void settleCollision(collision_t* curCollision, double L, double r);
+void resolveValidCollisions(collision_t**, int*, double, double);
+void updateParticles(particle_t**, int, bool*);
+void settleCollision(collision_t*, double, double);

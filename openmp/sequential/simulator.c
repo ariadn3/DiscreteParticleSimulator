@@ -6,8 +6,9 @@
 #include "particle.h"
 
 #define DEBUG_LEVEL 0
+#define SLOW_FACTOR 20
+#define NO_COLLISION 2
 
-params_t* read_file(void);
 void simulate(void);
 double checkWallCollision(double, double, particle_t*);
 double checkCollision(double, particle_t*, particle_t*);
@@ -18,15 +19,17 @@ int main() {
 }
 
 void simulate() {
-    params_t* params = read_file();
+    params_t* params = read_file(SLOW_FACTOR);
+    
     if (DEBUG_LEVEL > 3) {
         printf("%d %lf %lf %d\n", params->n, params->l, params->r, params->s);
         printf("Simulation printing: %d\n", params->willPrint);
     }
+
     int n = params->n;
     double l = params->l;
     double r = params->r;
-    int s = params->s*_SLOW_FACTOR;
+    int s = params->s * SLOW_FACTOR;
     bool willPrint = params->willPrint;
     particle_t** ps = params->particles;
 
@@ -47,18 +50,22 @@ void simulate() {
         for (int p = 0; p < n; p++) {
             if (DEBUG_LEVEL > 2) printf("Particle %d is p\n", p);
             double wallTime = checkWallCollision(r, l, ps[p]);
-            if (DEBUG_LEVEL > 2) printf("Particle %d collides with wall at %lf\n", p, wallTime);
-            if (wallTime <= 1) {
+            if (DEBUG_LEVEL > 2)
+                printf("Particle %d collides with wall at %lf\n", p, wallTime);
+            
+            if (wallTime != NO_COLLISION) {
                 collision_t* candidate = build_collision(ps[p], NULL, wallTime);
                 // #pragma CS
                 cs[*numCollisions] = candidate;
                 (*numCollisions)++;
                 // #end CS
             }
+            
             for (int q = p + 1; q < n; q++) {
                 if (DEBUG_LEVEL > 2) printf("Particle %d is q\n", q);
                 double time = checkCollision(r, ps[p], ps[q]);
-                if (time <= 1) {
+                
+                if (time != NO_COLLISION) {
                     collision_t* candidate = build_collision(ps[p], ps[q], time);
                     // #pragma CS
                     cs[*numCollisions] = candidate;
@@ -98,7 +105,7 @@ double checkWallCollision(double r, double l, particle_t* p) {
     double x_time = 2;
     double y_time = 2;
 
-    double margin = r + _EDGE_TOLERANCE;
+    double margin = r + EDGE_TOLERANCE;
     double x1 = p->x + p->v_x;
     double y1 = p->y + p->v_y;
 
@@ -124,31 +131,27 @@ double checkCollision(double r, particle_t* p, particle_t* q) {
     double dX = q->x - p->x;
     double dY = q->y - p->y;
 
-    double dXS = dX * dX;
-    double dYS = dY * dY;
-
     double dVx = q->v_x - p->v_x;
     double dVy = q->v_y - p->v_y;
 
-    double dVxS = dVx * dVx;
-    double dVyS = dVy * dVy;
-
-    double A = dVxS + dVyS;
+    double A = dVx * dVx + dVy * dVy;
     double B = 2 * (dX * dVx + dY * dVy);
-    double C = dXS + dYS - 4*r*r;
+    double C = dX * dX + dY * dY - 4 * r * r;
 
     double discriminant = B * B - 4 * A * C;
 
     if (discriminant <= 0) {
-        return 2;
+        return NO_COLLISION;
     }
     
+    // If particles collide, distance curve y = d(t) is concave down and intersects
+    // y = 2r -> compute the first (smaller) root only
     double t = (-B - sqrt(discriminant)) / 2 / A;
 
     if (t >= 0 && t <= 1) {
         return t;
     } else {
-        return 2;
+        return NO_COLLISION;
     }
 }
 

@@ -5,5 +5,5 @@
 #include "particle.h"
 #include "collision.h"
 
-void filterCollisions(collision_t** collisionArray, bool* hasCollided, int* numCollisions);
-int cmpCollision(const void* collisionA, const void* collisionB);
+void filterCollisions(collision_t**, bool*, int*);
+int cmpCollision(const void*, const void*);
