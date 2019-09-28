@@ -88,12 +88,18 @@ void settleCollision(collision_t* curCollision, double L, double r) {
         // If particle B will collide against the wall, check when it will collide 
         // with the nearest wall and take that time
         double time_bx = 1 - time, time_by = 1 - time;
-        if (B->x + time_bx * B->v_x < r) time_bx = -(B->x - r) / B->v_x;
-        else if (B->x + time_bx * B->v_x > L - r) time_bx = (L - r - B->x) / B->v_x;
-        
-        if (B->y + time_by * B->v_y < r) time_by = -(B->y - r) / B->v_y;
-        else if (B->y + time_by * B->v_y > L - r) time_by = (L - r - B->y) / B->v_y;
-        
+        if (B->v_x != 0) {
+            if (B->x + time_bx * B->v_x < r) time_bx = -(B->x - r) / B->v_x;
+            else if (B->x + time_bx * B->v_x > L - r)
+                time_bx = (L - r - B->x) / B->v_x;
+        }
+
+        if (B->v_y != 0) {
+            if (B->y + time_by * B->v_y < r) time_by = -(B->y - r) / B->v_y;
+            else if (B->y + time_by * B->v_y > L - r)
+                time_by = (L - r - B->y) / B->v_y;
+        }
+
         // If B collides with two walls after colliding with A, take lesser of
         // two times
         double time_b = (time_bx < time_by) ? time_bx : time_by;
@@ -105,11 +111,15 @@ void settleCollision(collision_t* curCollision, double L, double r) {
     // If particle A will collide against the wall, check when it will collide
     // with the nearest wall and take that time
     double time_ax = 1 - time, time_ay = 1 - time;
-    if (A->x + time_ax * A->v_x < r) time_ax = -(A->x - r) / A->v_x;
-    else if (A->x + time_ax * A->v_x > L - r) time_ax = (L - r - A->x) / A->v_x;
+    if (A->v_x != 0) {
+        if (A->x + time_ax * A->v_x < r) time_ax = -(A->x - r) / A->v_x;
+        else if (A->x + time_ax * A->v_x > L - r) time_ax = (L - r - A->x) / A->v_x;
+    }
     
-    if (A->y + time_ay * A->v_y < r) time_ay = -(A->y - r)/ A->v_y;
-    else if (A->y + time_ay * A->v_y > L - r) time_ay = (L - r - A->y) / A->v_y;
+    if (A->v_y != 0) {
+        if (A->y + time_ay * A->v_y < r) time_ay = -(A->y - r)/ A->v_y;
+        else if (A->y + time_ay * A->v_y > L - r) time_ay = (L - r - A->y) / A->v_y;
+    }
     
     // If A collides with another wall after colliding, take lesser of two times
     double time_a = (time_ax < time_ay) ? time_ax : time_ay;

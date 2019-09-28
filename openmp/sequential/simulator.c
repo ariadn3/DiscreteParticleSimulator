@@ -112,18 +112,26 @@ double checkWallCollision(double r, double l, particle_t* p) {
 
     // Check if particle would intersect a vertical wall after 1 time step
     // If yes -> compute the time this would happen
-    if (x1 < margin) {
-        x_time = (p->x - r) / -(p->v_x); 
-    } else if (x1 > l - margin) {
-        x_time = (l - r - p->x) / (p->v_x);
+    // Also check: if x-velocity is 0 but particle collides with wall
+    // -> moving along horizontal wall -> don't try to divide by 0
+    if (p->v_x != 0) {
+        if (x1 < margin) {
+            x_time = (p->x - r) / -(p->v_x); 
+        } else if (x1 > l - margin) {
+            x_time = (l - r - p->x) / (p->v_x);
+        }
     }
 
     // Check if particle would intersect a horizontal wall after 1 time step
     // If yes -> compute the time this would happen
-    if (y1 < margin) {
-        y_time = (p->y - r) / -(p->v_y);
-    } else if (y1 > l - margin) {
-        y_time = (l - r - p->y) / (p->v_y);
+    // Also check: if y-velocity is 0 but particle collides with wall
+    // -> moving along vertical wall -> don't try to divide by 0
+    if (p->v_y != 0) {
+        if (y1 < margin) {
+            y_time = (p->y - r) / -(p->v_y);
+        } else if (y1 > l - margin) {
+            y_time = (l - r - p->y) / (p->v_y);
+        }
     }
 
     // printf("%lf %lf %lf %lf\n", x_time, y_time, x1, y1);
