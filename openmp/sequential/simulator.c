@@ -6,7 +6,7 @@
 #include "particle.h"
 
 #define DEBUG_LEVEL 0
-#define SLOW_FACTOR 20
+#define SLOW_FACTOR 1
 #define NO_COLLISION 2
 
 void simulate(void);
