@@ -36,6 +36,13 @@ int cmpCollision(const void* collisionA, const void* collisionB) {
     collision_t* secondCollision = *(collision_t**) collisionB;
     
     if (firstCollision->time == secondCollision->time) {
+        // If both collisions involve the same first particle
+        // Then prioritize the wall collision, otherwise prioritize lower second particle ID
+        if (firstCollision->p->id == secondCollision->p->id) {
+            if (firstCollision->q == NULL) return -1;
+            else if (secondCollision->q == NULL) return 1;
+            else return (firstCollision->q->id < secondCollision->q->id) ? -1 : 1;
+        }
         // If two collisions occur at exactly the same time
         // Then prioritise the one which involves the particle P with lower ID
         return (firstCollision->p->id < secondCollision->p->id) ? -1 : 1;
