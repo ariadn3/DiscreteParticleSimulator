@@ -10,3 +10,4 @@
 void randomiseParticles(particle_t**, int, int, double, double);
 double* generatePosition(int, double, double);
 double* generateVelocity(int, int, double, double);
+

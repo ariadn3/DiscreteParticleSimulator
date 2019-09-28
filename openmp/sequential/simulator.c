@@ -33,7 +33,7 @@ void simulate() {
     bool willPrint = params->willPrint;
     particle_t** ps = params->particles;
 
-    printAll(n, 0, ps);
+    printAll(false, n, 0, ps);
 
     int* numCollisions = (int*) malloc(sizeof(int));
     bool* states = (bool*) malloc(sizeof(bool) * n);
@@ -93,8 +93,9 @@ void simulate() {
         updateParticles(ps, n, states);
         if (DEBUG_LEVEL > 3) printf("UPDATE PARTICLES\n");
 
-        // ===== PRINT =====
-        if (willPrint || step == s) printAll(n, step, ps);
+        // ===== PRINT SIMULATION DETAILS =====
+        if (step == s) printAll(true, n, step, ps);
+        else if (willPrint) printAll(false, n, step, ps);
     }
 
     if (DEBUG_LEVEL > 3) printf("SIMULATION COMPLETE\n");

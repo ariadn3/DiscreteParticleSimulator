@@ -9,6 +9,8 @@ particle_t* build_particle(int id, double x, double y, double v_x, double v_y) {
     particle->y = y;
     particle->v_x = v_x;
     particle->v_y = v_y;
+    particle->w_collisions = 0;
+    particle->p_collisions = 0;
 
     return particle;
 }
@@ -22,7 +24,17 @@ void free_particle(particle_t* particle) {
 char* particle_string(particle_t* p) {
     char* details = (char*) (malloc(sizeof(char) * 140));
 
-    sprintf(details, "%d %.14f %.14lf %.14f %.14f\n",
+    sprintf(details, "%d %10.8lf %10.8lf %10.8lf %10.8lf\n",
             p->id, p->x, p->y, p->v_x, p->v_y);
     return details;
 }
+
+// Returns a C string with full details of this particle
+char* particle_string_full(particle_t* p) {
+    char* details = (char*) (malloc(sizeof(char) * 160));
+
+    sprintf(details, "%d %10.8f %10.8lf %10.8lf %10.8lf %d %d\n",
+            p->id, p->x, p->y, p->v_x, p->v_y, p->p_collisions, p->w_collisions);
+    return details;
+}
+

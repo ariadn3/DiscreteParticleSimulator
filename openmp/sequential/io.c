@@ -40,11 +40,17 @@ params_t* read_file(int slowFactor) {
     return p;
 }
 
-void printAll(int n, int step, particle_t** particles) {
+void printAll(bool includeCollisions, int n, int step, particle_t** particles) {
     // Parallelise this
     for (int i = 0; i < n; i++) {
-        char* details = particle_string(particles[i]);
+        char* details;
+        if (includeCollisions) {
+            details = particle_string_full(particles[i]);
+        } else {
+            details = particle_string(particles[i]);
+        }
         printf("%d %s", step, details);
         free(details);
     }
 }
+

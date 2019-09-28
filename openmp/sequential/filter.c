@@ -10,7 +10,9 @@ void filterCollisions(collision_t** collisionArray, bool* hasCollided,
     collision_t* curCollision;
     for (int curIndex = 0; curIndex < *numCollisions; curIndex++) {
         curCollision = collisionArray[curIndex];
-
+        
+        // printf("=== Particle %d and %d collided ===\n", curCollision->p->id,
+        //         curCollision->q == NULL ? -1 : curCollision->q->id);
         if (hasCollided[curCollision->p->id]
                 || (curCollision->q != NULL && hasCollided[curCollision->q->id])) {
             // Particle p has already collided OR particle q has already collided
@@ -51,3 +53,4 @@ int cmpCollision(const void* collisionA, const void* collisionB) {
         return (firstCollision->time < secondCollision->time) ? -1 : 1;
     }
 }
+

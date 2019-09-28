@@ -26,3 +26,4 @@ char* collision_string(collision_t* c) {
             c->p->id, c->q->id, c->time);
     return details;
 }
+

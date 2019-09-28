@@ -1,5 +1,6 @@
 #include <stdio.h>
 #include <stdlib.h>
+#include <stdbool.h>
 #include <string.h>
 
 #include "params.h"
@@ -7,5 +8,5 @@
 #include "random.h"
 
 params_t* read_file(int slowFactor);
-void printAll(int, int, particle_t**);
+void printAll(bool, int, int, particle_t**);
 

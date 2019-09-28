@@ -11,10 +11,14 @@ typedef struct particle_t {
     double y;
     double v_x;
     double v_y;
+    int w_collisions;
+    int p_collisions;
 } particle_t;
 
 particle_t* build_particle(int, double, double, double, double);
 void free_particle(particle_t*);
 char* particle_string(particle_t*);
+char* particle_string_full(particle_t*);
 
 #endif
+

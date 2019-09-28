@@ -7,3 +7,4 @@
 
 void filterCollisions(collision_t**, bool*, int*);
 int cmpCollision(const void*, const void*);
+
