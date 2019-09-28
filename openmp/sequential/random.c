@@ -18,7 +18,8 @@ double* generatePosition(int n, double L, double r) {
     static double* posArray;
     posArray = (double*) malloc(n * 2 * sizeof(double));
     srand(SEED);
-
+    
+    // Checks pre-conditions (read our report)
     if (L < 2 * r) {
         printf("Assumption violated: L < (2 * r)\n");
         exit(1);
@@ -26,7 +27,8 @@ double* generatePosition(int n, double L, double r) {
         printf("Assumption violated: (n * r * r) > (L * L)\n");
         exit(1);
     }
-
+    
+    // Bounds for generating positions
     double leftLimit = r, rightLimit = L - r, lenDiff = rightLimit - leftLimit;
     for (int i = 0; i < n; i++) {
         while (true) {
@@ -51,7 +53,8 @@ double* generatePosition(int n, double L, double r) {
 double* generateVelocity(int slowFactor, int n, double L, double r) {
     static double* veloArray;
     veloArray = (double*) malloc(n * 2 * sizeof(double));
-
+    
+    // Bounds for generating velocities
     double veloLeftLimit = L / (8 * r * slowFactor);
     double veloRightLimit = L / (4 * slowFactor);
     double veloDiff = veloRightLimit - veloLeftLimit;

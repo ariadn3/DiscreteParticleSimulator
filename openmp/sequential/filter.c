@@ -3,6 +3,7 @@
 // Filters the collisions according to the time that it took place
 void filterCollisions(collision_t** collisionArray, bool* hasCollided,
         int* numCollisions) {
+    // Quicksort all collision candidates with the comparator function
     qsort(collisionArray, *numCollisions, sizeof(collision_t*), &cmpCollision);
 
     int saveIndex = 0;
@@ -33,9 +34,13 @@ void filterCollisions(collision_t** collisionArray, bool* hasCollided,
 int cmpCollision(const void* collisionA, const void* collisionB) {
     collision_t* firstCollision = *(collision_t**) collisionA;
     collision_t* secondCollision = *(collision_t**) collisionB;
-
-    if (firstCollision->time == secondCollision->time)
+    
+    if (firstCollision->time == secondCollision->time) {
+        // If two collisions occur at exactly the same time
+        // Then prioritise the one which involves the particle P with lower ID
         return (firstCollision->p->id < secondCollision->p->id) ? -1 : 1;
-    else
+    } else {
+        // Otherwise prioritise the collision occurring at an earlier time
         return (firstCollision->time < secondCollision->time) ? -1 : 1;
+    }
 }

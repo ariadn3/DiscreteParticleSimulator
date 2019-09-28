@@ -106,17 +106,20 @@ double checkWallCollision(double r, double l, particle_t* p) {
     double y_time = NO_COLLISION;
 
     double margin = r + EDGE_TOLERANCE;
+    // Particle's position after 1 time step
     double x1 = p->x + p->v_x;
     double y1 = p->y + p->v_y;
 
-    // VERTICAL WALLS
+    // Check if particle would intersect a vertical wall after 1 time step
+    // If yes -> compute the time this would happen
     if (x1 < margin) {
         x_time = (p->x - r) / -(p->v_x); 
     } else if (x1 > l - margin) {
         x_time = (l - r - p->x) / (p->v_x);
     }
 
-    // HORIZONTAL WALLS
+    // Check if particle would intersect a horizontal wall after 1 time step
+    // If yes -> compute the time this would happen
     if (y1 < margin) {
         y_time = (p->y - r) / -(p->v_y);
     } else if (y1 > l - margin) {
@@ -124,16 +127,21 @@ double checkWallCollision(double r, double l, particle_t* p) {
     }
 
     // printf("%lf %lf %lf %lf\n", x_time, y_time, x1, y1);
+
+    // Pick earlier of two times the particle would collide with a wall
     return x_time < y_time ? x_time : y_time;
 }
 
 double checkCollision(double r, particle_t* p, particle_t* q) {
+    // Difference in X and Y positions and velocities of particles P, Q
     double dX = q->x - p->x;
     double dY = q->y - p->y;
-
     double dVx = q->v_x - p->v_x;
     double dVy = q->v_y - p->v_y;
 
+    // 0 <= dT <= 1 is the fraction of a time step
+    // A, B, C are the coefficients of the (dT)^2, dT and 0-th order terms in
+    // the quadratic equation describing distance between particles P, Q at time dT
     double A = dVx * dVx + dVy * dVy;
     double B = 2 * (dX * dVx + dY * dVy);
     double C = dX * dX + dY * dY - 4 * r * r;
@@ -143,13 +151,17 @@ double checkCollision(double r, particle_t* p, particle_t* q) {
     if (discriminant <= 0) {
         return NO_COLLISION;
     }
+    
+    // Distance curve y = d(t) is concave up and intersects y = 2r at two points
+    // First intersect (root) is at smaller dT and we only compute this
 
-    // If particles collide, distance curve y = d(t) is concave down and intersects
-    // y = 2r -> compute the first (smaller) root only
-    double t = (-B - sqrt(discriminant)) / 2 / A;
+    // Possible that two particles are currently phasing through (i.e. d(0) < 2r)
+    // since only 1 collision was computed per particle -> we ignore any first roots
+    // that are dT < 0
+    double dT = (-B - sqrt(discriminant)) / 2 / A;
 
-    if (t >= 0 && t <= 1) {
-        return t;
+    if (dT >= 0 && dT <= 1) {
+        return dT;
     } else {
         return NO_COLLISION;
     }
