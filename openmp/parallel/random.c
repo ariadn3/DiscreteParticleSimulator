@@ -5,6 +5,8 @@ void randomiseParticles(particle_t** particleArray, int slowFactor, int n, doubl
         double r) {
     double* posArray = generatePosition(n, L, r);
     double* veloArray = generateVelocity(slowFactor, n, L, r);
+    // ===== DO NOT PARALLELISE =====
+    // Work is too trivial that runtime gets destroyed by overhead of //isation 
     for (int i = 0; i < n; i++) {
         particleArray[i] = build_particle(i, posArray[2 * i], posArray[2 * i + 1],
                 veloArray[2 * i], veloArray[2 * i + 1]);
@@ -19,17 +21,23 @@ double* generatePosition(int n, double L, double r) {
     posArray = (double*) malloc(n * 2 * sizeof(double));
     srand(SEED);
     
-    // Checks pre-conditions (read our report)
+    // Check pre-conditions (read our report)
     if (L < 2 * r) {
+        // No way to place any particle with diameter larger than the box
         printf("Assumption violated: L < (2 * r)\n");
         exit(1);
     } else if (n * r * r > L * L) {
+        // No way to place n particles safely in a box of length L
         printf("Assumption violated: (n * r * r) > (L * L)\n");
         exit(1);
     }
     
     // Bounds for generating positions
     double leftLimit = r, rightLimit = L - r, lenDiff = rightLimit - leftLimit;
+    // ===== CANNOT PARALLELISE =====
+    // Significant work is done here attempting to place all n particles and checking
+    // that each particle does not overlap with any previously placed particle
+    // Not possible to //ise due to sequential nature of placement
     for (int i = 0; i < n; i++) {
         while (true) {
             posArray[2 * i] = leftLimit + lenDiff * (rand() / (double)RAND_MAX);
@@ -62,6 +70,8 @@ double* generateVelocity(int slowFactor, int n, double L, double r) {
     double angleDiff = angleRightLimit - angleLeftLimit;
     double velo, angle;
 
+    // ===== DO NOT PARALLELISE =====
+    // Work is too trivial that runtime gets destroyed by overhead of //isation 
     for (int i = 0; i < n; i++) {
         velo = veloLeftLimit + veloDiff * (rand() / (double)RAND_MAX);
         angle = angleLeftLimit + angleDiff * (rand() / (double)RAND_MAX);

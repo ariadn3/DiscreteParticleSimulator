@@ -52,7 +52,8 @@ void simulate() {
 
     int* numCollisions = (int*) malloc(sizeof(int));
     bool* states = (bool*) malloc(sizeof(bool) * n);
-    // ===== LOW-PRIORITY PARALLEL =====
+    // ===== DO NOT PARALLELISE =====
+    // Work is too trivial that runtime gets destroyed by overhead of //isation
     for (int i = 0; i < n; i++) {
         states[i] = false;
     }
@@ -65,7 +66,7 @@ void simulate() {
         if (DEBUG_LEVEL > 3) printf("Step %d\n", step);
         *numCollisions = 0;
 
-        // ===== PARALLEL: CHECKING AND ADDING COLLISION CANDIDATES =====
+        // ===== PARALLELISE: CHECKING AND ADDING COLLISION CANDIDATES =====
         #pragma omp parallel
         {
             #pragma omp for schedule(dynamic, 1)

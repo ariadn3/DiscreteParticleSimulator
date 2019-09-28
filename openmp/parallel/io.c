@@ -24,8 +24,10 @@ params_t* read_file(int slowFactor) {
     bool isInitialised = false;
     particle_t** particles = (particle_t**) malloc(p->n * sizeof(particle_t));
 
+    // ===== DO NOT PARALLELISE =====
+    // Whilst I/O is slow, reading in input is only done once and is a negligible
+    // fraction of the runtime of the overall program
     // If initial positions and velocities of particles are provided, read them
-    // ===== LOW-PRIORITY PARALLEL =====
     while (fgets(buffer, 140, stdin) != NULL) {
         isInitialised = true;
         sscanf(buffer, "%d %lf %lf %lf %lf", &i, &x, &y, &v_x, &v_y);
@@ -42,7 +44,8 @@ params_t* read_file(int slowFactor) {
 }
 
 void printAll(bool includeCollisions, int n, int step, particle_t** particles) {
-    // ===== LOW-PRIORITY PARALLEL =====
+    // ===== DO NOT PARALLELISE =====
+    // This will mess up the ordering of the output - to amusing effect
     for (int i = 0; i < n; i++) {
         char* details;
         if (includeCollisions) {
