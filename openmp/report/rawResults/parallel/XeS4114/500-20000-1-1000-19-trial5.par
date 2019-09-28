@@ -1,0 +1,18 @@
+# started on Sun Sep 29 03:48:50 2019
+
+
+ Performance counter stats for '../a.out 19':
+
+      22190.667128      task-clock (msec)         #   18.282 CPUs utilized          
+               209      context-switches          #    0.009 K/sec                  
+                31      cpu-migrations            #    0.001 K/sec                  
+               159      page-faults               #    0.007 K/sec                  
+    52,043,533,575      cycles                    #    2.345 GHz                    
+   <not supported>      stalled-cycles-frontend  
+   <not supported>      stalled-cycles-backend   
+    15,093,128,671      instructions              #    0.29  insns per cycle        
+     1,469,521,212      branches                  #   66.222 M/sec                  
+         1,857,044      branch-misses             #    0.13% of all branches        
+
+       1.213778717 seconds time elapsed
+
