@@ -143,15 +143,11 @@ double checkCollision(double r, particle_t* p, particle_t* q) {
         return 2;
     }
     
-    double discriroot = sqrt(discriminant);
-    double t1 = (-B + discriroot) / 2 / A;
-    double t2 = (-B - discriroot) / 2 / A;
+    double t = (-B - sqrt(discriminant)) / 2 / A;
 
-    if (t1 >= 0 && t1 <= 1) {
-        if (t2 >= 0 && t2 <= 1) return t1 < t2 ? t1 : t2;
-        return t1;
+    if (t >= 0 && t <= 1) {
+        return t;
     } else {
-        if (t1 < 0 && t2 >= 0 && t2 <= 1) return t2;
         return 2;
     }
 }
