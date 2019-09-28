@@ -35,13 +35,16 @@ void settleCollision(collision_t* curCollision, double L, double r) {
     A = curCollision->p;
     B = curCollision->q;
     double time = curCollision->time;
-    
+
     // Advance A by the fractional time step dT until collision occurs
     A->x += time * A->v_x;
     A->y += time * A->v_y;
 
     // If the collision is against the wall, toggle directions
     if (B == NULL) {
+        // Add to wall collision counter of A
+        A->w_collisions += 1;
+        // printf("Step %.14lf: particle %d collided with wall\n", time, A->id);
         if (A->x <= r + EDGE_TOLERANCE || A->x >= L - r - EDGE_TOLERANCE)
             A->v_x *= -1;
         if (A->y <= r + EDGE_TOLERANCE || A->y >= L - r - EDGE_TOLERANCE)
@@ -49,19 +52,24 @@ void settleCollision(collision_t* curCollision, double L, double r) {
     }
     // If collision is against another particle
     else {
+        // Add to particle collision counters of both A and B
+        A->p_collisions += 1;
+        B->p_collisions += 1;
+        // printf("Step %.14lf: particle %d collided with particle %d\n",
+        //        time, A->id, B->id);
         // Advance B by dT until collision occurs
         B->x += time * B->v_x;
         B->y += time * B->v_y;
-    
+
         // Compute distance between A, B
         double distance = sqrt(pow(B->x - A->x, 2) + pow(B->y - A->y, 2));
-        
+
         // Compute normal and tangent unit vectors along x-, y-axes
         double n_x = (B->x - A->x) / distance;
         double n_y = (B->y - A->y) / distance;
         double t_x = -n_y;
         double t_y = n_x;
-        
+
         // Compute new normal and tangent unit vectors for particles A, B
         double v_an = n_x * A->v_x + n_y * A->v_y;
         double v_at = t_x * A->v_x + t_y * A->v_y;
@@ -115,15 +123,15 @@ void settleCollision(collision_t* curCollision, double L, double r) {
         if (A->x + time_ax * A->v_x < r) time_ax = -(A->x - r) / A->v_x;
         else if (A->x + time_ax * A->v_x > L - r) time_ax = (L - r - A->x) / A->v_x;
     }
-    
+
     if (A->v_y != 0) {
         if (A->y + time_ay * A->v_y < r) time_ay = -(A->y - r)/ A->v_y;
         else if (A->y + time_ay * A->v_y > L - r) time_ay = (L - r - A->y) / A->v_y;
     }
-    
+
     // If A collides with another wall after colliding, take lesser of two times
     double time_a = (time_ax < time_ay) ? time_ax : time_ay;
-    
+
     A->x += time_a * A->v_x;
     A->y += time_a * A->v_y;
 }

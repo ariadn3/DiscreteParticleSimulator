@@ -10,7 +10,7 @@ else:
 	filepath = input('Enter the input/output file you would like to visualize (xxx.in & xxx.out): ')
 # filepath = 'testAnim'
 
-_SLOWDOWN_FACTOR = 20
+_SLOWDOWN_FACTOR = 16
 
 startTime = time()
 
@@ -80,7 +80,7 @@ def plotPoints(step):
 
 ani = FuncAnimation(fig, plotPoints, frames = list(range(0, steps+1)),
                     init_func = init, blit = True, interval = 10)
-ani.save('{}.gif'.format(filepath), writer = 'imagemagick', fps=60)
+ani.save('{}.gif'.format(filepath), writer = 'imagemagick', fps=2*_SLOWDOWN_FACTOR)
 
 endTime = time()
 

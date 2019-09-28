@@ -70,3 +70,4 @@ double* generateVelocity(int slowFactor, int n, double L, double r) {
     }
     return veloArray;
 }
+

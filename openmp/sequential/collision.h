@@ -18,3 +18,4 @@ void free_collision(collision_t*);
 char* collision_string(collision_t*);
 
 #endif
+

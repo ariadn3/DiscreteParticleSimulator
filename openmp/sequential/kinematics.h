@@ -11,3 +11,4 @@
 void resolveValidCollisions(collision_t**, int*, double, double);
 void updateParticles(particle_t**, int, bool*);
 void settleCollision(collision_t*, double, double);
+
