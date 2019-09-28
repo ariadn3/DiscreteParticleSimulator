@@ -1,4 +1,4 @@
-#include "kinetics.h"
+#include "kinematics.h"
 
 // Updates particles involved in all valid collisions in collision array
 void resolveValidCollisions(collision_t** collisionArray, int* numCollisions,

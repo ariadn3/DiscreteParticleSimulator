@@ -2,7 +2,7 @@
 
 #include "filter.h"
 #include "io.h"
-#include "kinetics.h"
+#include "kinematics.h"
 #include "particle.h"
 
 #define DEBUG_LEVEL 0
