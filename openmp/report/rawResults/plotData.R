@@ -81,6 +81,17 @@ for (n in sort(unique(parData$N))) {
               machineLabs)
     ggsave(paste0(SAVE_LOCATION, "par-", n, "N-varyThreads.png"), dpi = 300)
     
+    print(ggplot(varyThreadsData) +
+              geom_point(aes(threads, context.switches, color=machine)) + 
+              geom_line(aes(threads, context.switches, color=machine)) +
+              labs(title = paste("Plot of context switches against number of threads for N =", n),
+                   x  = "Thread count",
+                   y = "Context switches",
+                   legend = "Machine") +
+              defaultTheme +
+              machineLabs)
+    ggsave(paste0(SAVE_LOCATION, "par-", n, "N-contextSwitches.png"), dpi = 300)
+    
     seqPart = with(seqData, seqData[which(n == N & L == DEFAULT_L & r == DEFAULT_r & steps == DEFAULT_STEPS),])
     colnames(seqPart)[colnames(seqPart)=="wall.clock.time"] = "seqTime"
     varyThreadsData = left_join(varyThreadsData, select(seqPart, machine, seqTime), by = 'machine')
