@@ -6,7 +6,7 @@ TOTAL_RUNS=5
 
 rm *.seq -f
 
-allThreads=(1 2 4 6 8 10 12 16 20 24 28 32 40 64)
+allThreads=(1 2 4 6 7 8 9 10 12 16 19 20 21 24 28 32 40 64)
 
 for numThreads in ${allThreads[@]}
 do
