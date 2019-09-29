@@ -25,6 +25,7 @@ params_t* read_file(int slowFactor) {
     particle_t** particles = (particle_t**) malloc(p->n * sizeof(particle_t));
 
     // If initial positions and velocities of particles are provided, read them
+    // ===== LOW-PRIORITY PARALLEL =====
     while (fgets(buffer, 140, stdin) != NULL) {
         isInitialised = true;
         sscanf(buffer, "%d %lf %lf %lf %lf", &i, &x, &y, &v_x, &v_y);
@@ -41,7 +42,7 @@ params_t* read_file(int slowFactor) {
 }
 
 void printAll(bool includeCollisions, int n, int step, particle_t** particles) {
-    // Parallelise this
+    // ===== LOW-PRIORITY PARALLEL =====
     for (int i = 0; i < n; i++) {
         char* details;
         if (includeCollisions) {

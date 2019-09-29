@@ -1,19 +1,27 @@
+#include <omp.h>
+
 #include "kinematics.h"
 
 // Updates particles involved in all valid collisions in collision array
 void resolveValidCollisions(collision_t** collisionArray, int* numCollisions,
         double L, double r) {
     collision_t* curCollision;
+    int chunk = (*numCollisions / omp_get_num_threads()) + 1;
+    // ===== PARALLELISE =====
+    // Each collision involves particles that are updated independently
     for (int i = 0; i < *numCollisions; i++) {
         curCollision = collisionArray[i];
         settleCollision(curCollision, L, r);
         free_collision(curCollision);
     }
+    // End parallel for-loop region
 }
 
 // Updates particles not involved in any collision
 void updateParticles(particle_t** Array, int n, bool* hasCollided) {
     particle_t* curParticle;
+    // ===== PARALLELISE =====
+    // Each particle can be safely updated independently
     for (int i = 0; i < n; i++) {
         curParticle = Array[i];
         if (!hasCollided[i]) {

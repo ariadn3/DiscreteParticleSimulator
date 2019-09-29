@@ -8,6 +8,10 @@ void filterCollisions(collision_t** collisionArray, bool* hasCollided,
 
     int saveIndex = 0;
     collision_t* curCollision;
+
+    // ===== CANNOT PARALLELISE =====
+    // A collision candidate that is accepted earlier may cause some of the later
+    // collision candidates to be rejected -> FULLY SEQUENTIAL
     for (int curIndex = 0; curIndex < *numCollisions; curIndex++) {
         curCollision = collisionArray[curIndex];
         
@@ -39,7 +43,8 @@ int cmpCollision(const void* collisionA, const void* collisionB) {
     
     if (firstCollision->time == secondCollision->time) {
         // If both collisions involve the same first particle
-        // Then prioritize the wall collision, otherwise prioritize lower second particle ID
+        // Then prioritize the wall collision, otherwise prioritize lower second
+        // particle ID
         if (firstCollision->p->id == secondCollision->p->id) {
             if (firstCollision->q == NULL) return -1;
             else if (secondCollision->q == NULL) return 1;
