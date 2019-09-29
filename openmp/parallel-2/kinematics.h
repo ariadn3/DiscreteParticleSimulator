@@ -8,7 +8,7 @@
 
 #define EDGE_TOLERANCE 1e-14
 
-void resolveValidCollisions(collision_t**, int*, double, double);
-void updateParticles(particle_t**, int, bool*);
-void settleCollision(collision_t*, double, double);
+void resolveValidCollisions(collision_t**, int*, int, double, double);
+void updateParticles(particle_t**, int, int, bool*);
+void settleCollision(collision_t*, int, double, double);
 

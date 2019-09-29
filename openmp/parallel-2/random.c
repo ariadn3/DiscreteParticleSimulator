@@ -1,14 +1,14 @@
 #include "random.h"
 
 // Randomly generates an array of particles
-void randomiseParticles(particle_t** particleArray, int slowFactor, int n, double L,
-        double r) {
+void randomiseParticles(particle_t** particleArray, int g, int slowFactor, int n,
+        double L, double r) {
     double* posArray = generatePosition(n, L, r);
     double* veloArray = generateVelocity(slowFactor, n, L, r);
     // ===== DO NOT PARALLELISE =====
     // Work is too trivial that runtime gets destroyed by overhead of //isation 
     for (int i = 0; i < n; i++) {
-        particleArray[i] = build_particle(i, posArray[2 * i], posArray[2 * i + 1],
+        particleArray[i] = build_particle(i, g, posArray[2 * i], posArray[2 * i + 1],
                 veloArray[2 * i], veloArray[2 * i + 1]);
     }
     free(posArray);

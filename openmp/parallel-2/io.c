@@ -1,7 +1,7 @@
 #include "io.h"
 
 // Read in inputs from file and return initial simulation parameters as params_t
-params_t* read_file(int slowFactor) {
+params_t* read_file(int slowFactor, int g) {
     params_t* p = params();
 
     // Read in N, L, r, S and finally simulation mode
@@ -31,12 +31,12 @@ params_t* read_file(int slowFactor) {
     while (fgets(buffer, 140, stdin) != NULL) {
         isInitialised = true;
         sscanf(buffer, "%d %lf %lf %lf %lf", &i, &x, &y, &v_x, &v_y);
-        particles[i] = build_particle(i, x, y, v_x / slowFactor, v_y / slowFactor);
+        particles[i] = build_particle(i, g, x, y, v_x / slowFactor, v_y / slowFactor);
     }
 
     // Otherwise randomise the initial positions and velocities
     if (!isInitialised) {
-        randomiseParticles(particles, slowFactor, p->n, p->l, p->r);
+        randomiseParticles(particles, g, slowFactor, p->n, p->l, p->r);
     }
 
     p->particles = particles;

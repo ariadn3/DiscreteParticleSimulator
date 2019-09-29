@@ -1,7 +1,7 @@
 #include "particle.h"
 
 // Initialises a new particle
-particle_t* build_particle(int id, double x, double y, double v_x, double v_y) {
+particle_t* build_particle(int id, int g, double x, double y, double v_x, double v_y) {
     particle_t* particle = (particle_t*) malloc(sizeof(particle_t));
 
     particle->id = id;
@@ -11,6 +11,8 @@ particle_t* build_particle(int id, double x, double y, double v_x, double v_y) {
     particle->v_y = v_y;
     particle->w_collisions = 0;
     particle->p_collisions = 0;
+    particle->cell_x = (int) (x / g);
+    particle->cell_y = (int) (y / g);
 
     return particle;
 }

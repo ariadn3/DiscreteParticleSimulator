@@ -3,7 +3,7 @@
 #include "kinematics.h"
 
 // Updates particles involved in all valid collisions in collision array
-void resolveValidCollisions(collision_t** collisionArray, int* numCollisions,
+void resolveValidCollisions(collision_t** collisionArray, int* numCollisions, int g,
         double L, double r) {
     collision_t* curCollision;
     // ===== PARALLELISE: COMPUTE NEW POSITIONS AFTER COLLISION =====
@@ -14,7 +14,7 @@ void resolveValidCollisions(collision_t** collisionArray, int* numCollisions,
         #pragma omp for schedule(static, chunk_size) 
         for (int i = 0; i < *numCollisions; i++) {
             curCollision = collisionArray[i];
-            settleCollision(curCollision, L, r);
+            settleCollision(curCollision, g, L, r);
             free_collision(curCollision);
         }
     }
@@ -22,7 +22,7 @@ void resolveValidCollisions(collision_t** collisionArray, int* numCollisions,
 }
 
 // Updates particles not involved in any collision
-void updateParticles(particle_t** Array, int n, bool* hasCollided) {
+void updateParticles(particle_t** Array, int n, int g, bool* hasCollided) {
     particle_t* curParticle;
     // ===== DO NOT PARALLELISE =====
     // As each particle is updated independently, it it safe to parallelise, but the
@@ -33,6 +33,9 @@ void updateParticles(particle_t** Array, int n, bool* hasCollided) {
             // Advance particle by its velocity
             curParticle->x += curParticle->v_x;
             curParticle->y += curParticle->v_y;
+            // Compute the new cell the particle is contained within in the grid
+            curParticle->cell_x = (int) (curParticle->x / g);
+            curParticle->cell_y = (int) (curParticle->y / g);
         } else {
             // Particle had collided -> reset its collision status for next step
             hasCollided[i] = false;
@@ -41,7 +44,7 @@ void updateParticles(particle_t** Array, int n, bool* hasCollided) {
 }
 
 // Moves particles involved in a collision to their rightful place after the timestep
-void settleCollision(collision_t* curCollision, double L, double r) {
+void settleCollision(collision_t* curCollision, int g, double L, double r) {
     particle_t* A;
     particle_t* B;
     // Particles A and B (null if wall collision) in this collision
@@ -127,6 +130,9 @@ void settleCollision(collision_t* curCollision, double L, double r) {
 
         B->x += time_b * B->v_x;
         B->y += time_b * B->v_y;
+
+        B->cell_x = (int) (B->x / g);
+        B->cell_y = (int) (B->y / g);
     }
 
     // If particle A will collide against the wall, check when it will collide
@@ -147,5 +153,8 @@ void settleCollision(collision_t* curCollision, double L, double r) {
 
     A->x += time_a * A->v_x;
     A->y += time_a * A->v_y;
+    
+    A->cell_x = (int) (A->x / g);
+    A->cell_y = (int) (A->y / g);
 }
 
