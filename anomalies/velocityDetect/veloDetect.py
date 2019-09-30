@@ -22,7 +22,7 @@ with open('std.out') as fileOut:
 		if v > maxVelocity:
 			step = int(step)
 			index = int(index)
-			print('\t Violation: Index {:4d} - Particle {:4d} - Velocity = {:4.8f}'.format(index, index, v))
+			print('\t Violation: Step {:4d} - Particle {:4d} - Velocity = {:4.8f}'.format(step, index, v))
 print()
 print('Max 1D velocity: {:4.8f}'.format(max1DVelo))
 print('Max 2D velocity: {:4.8f}'.format(max2DVelo))
