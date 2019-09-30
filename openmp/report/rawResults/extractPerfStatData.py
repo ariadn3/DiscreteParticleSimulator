@@ -15,32 +15,42 @@ _SEQUENTIAL_OUTPUT_FILE = 'seqData.csv'
 _SEQUENTIAL_PARAM_STRINGS = ('N', 'L', 'r', 'steps', 'machine')
 _PARALLEL_OUTPUT_FILE = 'parData.csv'
 _PARALLEL_PARAM_STRINGS = ('N', 'L', 'r', 'steps', 'threads', 'machine')
+_PARALLEL_2_OUTPUT_FILE = 'parData2.csv'
+_PARALLEL_2_PARAM_STRINGS = ('N', 'L', 'r', 'steps', 'threads', 'gridSize', 'machine')
 
-seqData = {}
-parData = {}
+fileExtensionDict = {'.seq': {}, '.par': {}, '.par2': {}}
 dataStruct = re.compile('^.+?(?=#)')
 
 for root, dirs, files in os.walk('.', topdown = False):
 	for name in files:
-		fileExtension = name[-4:]
-		if fileExtension != '.seq' and fileExtension != '.par':
+		fileExtension = '.' + name.rpartition('.')[-1]
+		if fileExtension not in fileExtensionDict:
 			continue
-		isSeq = (fileExtension == '.seq')
 
-		if not isSeq:
+		if fileExtension == '.par2':
+			N, L, r, steps, threads, gridSize, _ = name.split('-')
+			threads = int(threads)
+			gridSize = int(gridSize)
+		if fileExtension == '.par':
 			N, L, r, steps, threads, _ = name.split('-')
 			threads = int(threads)
-		else:
+		elif fileExtension == '.seq':
 			N, L, r, steps, _ = name.split('-')
 
 		N = int(N)
 		L = float(L)
 		r = float(r)
 		steps = int(steps)
-		machine = root.split('\\')[2]
-		paramTuple = (N, L, r, steps, machine) if isSeq else (N, L, r, steps, threads, machine)
+		machine = root.split('/')[2]
 
-		dictToWrite = seqData if isSeq else parData
+		if fileExtension == '.par2':
+			paramTuple = (N, L, r, steps, threads, gridSize, machine)
+		elif fileExtension == '.par':
+			paramTuple = (N, L, r, steps, threads, machine)
+		elif fileExtension == '.seq':
+			paramTuple = (N, L, r, steps, machine) 
+
+		dictToWrite = fileExtensionDict[fileExtension]
 		with open(root + '/' + name) as fileOut:
 			lines = fileOut.readlines()
 			wallClockTime = _CLOCK_DTYPE(lines[-2].split()[0])
@@ -57,7 +67,11 @@ for root, dirs, files in os.walk('.', topdown = False):
 							curStats[linePart[1]] = _INTERESTED_STATS[linePart[1]](linePart[0])
 				dictToWrite[paramTuple] = curStats
 
-for filePath, paramString, dataDict in ((_SEQUENTIAL_OUTPUT_FILE, _SEQUENTIAL_PARAM_STRINGS, seqData), (_PARALLEL_OUTPUT_FILE, _PARALLEL_PARAM_STRINGS, parData)):
+outputFiles = ((_SEQUENTIAL_OUTPUT_FILE, _SEQUENTIAL_PARAM_STRINGS, fileExtensionDict['.seq']),
+	(_PARALLEL_OUTPUT_FILE, _PARALLEL_PARAM_STRINGS, fileExtensionDict['.par']),
+	(_PARALLEL_2_OUTPUT_FILE, _PARALLEL_2_PARAM_STRINGS, fileExtensionDict['.par2']))
+
+for filePath, paramString, dataDict in outputFiles:
 	with open(filePath, 'w') as outFile:
 		outFile.write(','.join(paramString) + ',' + _CLOCK_STRING + ',' + ','.join(_INTERESTED_STATS) + '\n')
 		for k, v in dataDict.items():

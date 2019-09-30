@@ -1,0 +1,18 @@
+# started on Mon Sep 30 01:54:41 2019
+
+
+ Performance counter stats for '../a.out 2 32':
+
+     187021.755090      task-clock (msec)         #    1.999 CPUs utilized          
+               238      context-switches          #    0.001 K/sec                  
+                 1      cpu-migrations            #    0.000 K/sec                  
+               140      page-faults               #    0.001 K/sec                  
+      500063429604      cycles                    #    2.674 GHz                    
+   <not supported>      stalled-cycles-frontend  
+   <not supported>      stalled-cycles-backend   
+      742375169152      instructions              #    1.48  insns per cycle        
+       67573183176      branches                  #  361.312 M/sec                  
+        3298883534      branch-misses             #    4.88% of all branches        
+
+      93.549776079 seconds time elapsed
+
