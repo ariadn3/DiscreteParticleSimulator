@@ -9,7 +9,7 @@
 #include "particle.h"
 
 #define DEBUG_LEVEL 0
-#define SLOW_FACTOR 1
+#define SLOW_FACTOR 4
 #define NO_COLLISION 2
 
 void simulate(void);
@@ -17,6 +17,11 @@ double checkWallCollision(double, double, particle_t*);
 double checkCollision(double, particle_t*, particle_t*);
 
 int num_threads;
+// Number of grid cells along the box
+int grid_size;
+// Width of a cell in the grid (g)
+double cell_size;
+int max_cell_separation;
 
 int main(int argc, char** argv) {
     // ===== SETUP OPENMP =====
@@ -26,6 +31,11 @@ int main(int argc, char** argv) {
     } else {
         num_threads = 1;
     }
+    if (argc >= 3) {
+        grid_size = atoi(argv[2]);
+    } else {
+        grid_size = 1;
+    }
     omp_set_num_threads(num_threads);
 
     simulate();
@@ -34,7 +44,7 @@ int main(int argc, char** argv) {
 
 void simulate() {
     // ===== READ SIMULATION PARAMETERS =====
-    params_t* params = read_file(SLOW_FACTOR);
+    params_t* params = read_file(SLOW_FACTOR, cell_size);
 
     if (DEBUG_LEVEL > 3) {
         printf("%d %lf %lf %d\n", params->n, params->l, params->r, params->s);
@@ -47,7 +57,10 @@ void simulate() {
     int s = params->s * SLOW_FACTOR;
     bool willPrint = params->willPrint;
     particle_t** ps = params->particles;
-
+    
+    // Compute radius in blocks around a given cell to search for collision candidates
+    cell_size = l / grid_size;
+    max_cell_separation = ((int) (2 * (l / 4 + r) / cell_size)) + 1;
     printAll(false, n, 0, ps);
 
     int* numCollisions = (int*) malloc(sizeof(int));
@@ -90,7 +103,7 @@ void simulate() {
                 for (int q = p + 1; q < n; q++) {
                     if (DEBUG_LEVEL > 2) printf("Particle %d is q\n", q);
                     double time = checkCollision(r, ps[p], ps[q]);
-
+                    
                     if (time != NO_COLLISION) {
                         collision_t* candidate = build_collision(ps[p], ps[q], time);
                         // ===== CRITICAL SECTION: COLLISION CANDIDATES ARRAY =====
@@ -114,7 +127,7 @@ void simulate() {
         if (DEBUG_LEVEL > 3) printf("FILTER\n");
 
         // ===== RESOLVE VALID COLLISIONS =====
-        resolveValidCollisions(cs, numCollisions, l, r);
+        resolveValidCollisions(cs, numCollisions, cell_size, l, r);
 
         if (DEBUG_LEVEL > 2) {
             for (int i = 0; i < *numCollisions; i++) {
@@ -122,7 +135,7 @@ void simulate() {
             }
         }
 
-        updateParticles(ps, n, states);
+        updateParticles(ps, n, cell_size, states);
         if (DEBUG_LEVEL > 3) printf("UPDATE PARTICLES\n");
 
         // ===== PRINT SIMULATION DETAILS =====
@@ -174,6 +187,12 @@ double checkWallCollision(double r, double l, particle_t* p) {
 }
 
 double checkCollision(double r, particle_t* p, particle_t* q) {
+    // Naively ignore boxes outside manhattan cell distance
+    // Particles in cells that are too far apart can never collide
+    // Avoid expensive computation below
+    if (abs(q->cell_x - p->cell_x) + abs(q->cell_y - p->cell_y) > max_cell_separation)
+        return NO_COLLISION;
+
     // Difference in X and Y positions and velocities of particles P, Q
     double dX = q->x - p->x;
     double dY = q->y - p->y;

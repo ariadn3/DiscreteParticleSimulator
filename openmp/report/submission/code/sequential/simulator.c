@@ -1,7 +1,4 @@
-#include <stdlib.h>
-#include <stdio.h>
 #include <math.h>
-#include <omp.h>
 
 #include "filter.h"
 #include "io.h"
@@ -16,24 +13,12 @@ void simulate(void);
 double checkWallCollision(double, double, particle_t*);
 double checkCollision(double, particle_t*, particle_t*);
 
-int num_threads;
-
-int main(int argc, char** argv) {
-    // ===== SETUP OPENMP =====
-    omp_set_dynamic(0);
-    if (argc >= 2) {
-        num_threads = atoi(argv[1]);
-    } else {
-        num_threads = 1;
-    }
-    omp_set_num_threads(num_threads);
-
+int main() {
     simulate();
     return 0;
 }
 
 void simulate() {
-    // ===== READ SIMULATION PARAMETERS =====
     params_t* params = read_file(SLOW_FACTOR);
 
     if (DEBUG_LEVEL > 3) {
@@ -52,62 +37,45 @@ void simulate() {
 
     int* numCollisions = (int*) malloc(sizeof(int));
     bool* states = (bool*) malloc(sizeof(bool) * n);
-    // ===== DO NOT PARALLELISE =====
-    // Work is too trivial that runtime gets destroyed by overhead of //isation
     for (int i = 0; i < n; i++) {
         states[i] = false;
     }
     collision_t** cs = (collision_t**) malloc(sizeof(collision_t*) * n * n / 2); 
-    
-    // ===== CANNOT PARALLELISE =====
-    // Steps of a simulation are sequential in nature since the (n + 1)-th step
-    // is dependent on the state of the n-th step
+
     for (int step = 1; step <= s; step++) {
         if (DEBUG_LEVEL > 3) printf("Step %d\n", step);
         *numCollisions = 0;
 
-        // ===== PARALLELISE: CHECKING AND ADDING COLLISION CANDIDATES =====
-        #pragma omp parallel
-        {
-            #pragma omp for schedule(dynamic, 1)
-            for (int p = 0; p < n; p++) {
-                if (DEBUG_LEVEL > 2) printf("Particle %d is p\n", p);
-                double wallTime = checkWallCollision(r, l, ps[p]);
-                if (DEBUG_LEVEL > 2)
-                    printf("Particle %d collides with wall at %lf\n", p, wallTime);
+        // ===== CHECKING AND ADDING COLLISION CANDIDATES =====
+        for (int p = 0; p < n; p++) {
+            if (DEBUG_LEVEL > 2) printf("Particle %d is p\n", p);
+            double wallTime = checkWallCollision(r, l, ps[p]);
+            if (DEBUG_LEVEL > 2)
+                printf("Particle %d collides with wall at %lf\n", p, wallTime);
 
-                if (wallTime != NO_COLLISION) {
-                    collision_t* candidate = build_collision(ps[p], NULL, wallTime);
-                    // ===== CRITICAL SECTION: COLLISION CANDIDATES ARRAY =====
-                    // Prevent concurrent modification of numCollisions
-                    #pragma omp critical
-                    {
-                        cs[*numCollisions] = candidate;
-                        (*numCollisions)++;
-                    }
-                }
+            if (wallTime != NO_COLLISION) {
+                collision_t* candidate = build_collision(ps[p], NULL, wallTime);
+                // #pragma CS
+                cs[*numCollisions] = candidate;
+                (*numCollisions)++;
+                // #end CS
+            }
 
-                for (int q = p + 1; q < n; q++) {
-                    if (DEBUG_LEVEL > 2) printf("Particle %d is q\n", q);
-                    double time = checkCollision(r, ps[p], ps[q]);
+            for (int q = p + 1; q < n; q++) {
+                if (DEBUG_LEVEL > 2) printf("Particle %d is q\n", q);
+                double time = checkCollision(r, ps[p], ps[q]);
 
-                    if (time != NO_COLLISION) {
-                        collision_t* candidate = build_collision(ps[p], ps[q], time);
-                        // ===== CRITICAL SECTION: COLLISION CANDIDATES ARRAY =====
-                        // Prevent concurrent modification of numCollisions
-                        #pragma omp critical
-                        {
-                            cs[*numCollisions] = candidate;
-                            (*numCollisions)++;
-                        }
-                    }
+                if (time != NO_COLLISION) {
+                    collision_t* candidate = build_collision(ps[p], ps[q], time);
+                    // #pragma CS
+                    cs[*numCollisions] = candidate;
+                    (*numCollisions)++;
+                    // #end CS
                 }
             }
         }
-        // End parallel for-loop region
 
-        if (DEBUG_LEVEL > 1)
-            printf("%d collisions for step %d", *numCollisions, step);
+        if (DEBUG_LEVEL > 1) printf("%d collisions for step %d", *numCollisions, step);
 
         // ===== FILTER COLLISION CANDIDATES TO VALID COLLISION =====
         filterCollisions(cs, states, numCollisions);
