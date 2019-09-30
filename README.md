@@ -12,4 +12,4 @@ CS3210 Assignment 1 Repository - written in C/C++
 - Assignment 1B (CUDA implementation) in directory `/cuda`
     - Presently empty
 
-![](visualisations/sampleRun.gif)
+![](visualisations/archive/sampleRun.gif)
