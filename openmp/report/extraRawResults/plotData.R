@@ -58,7 +58,9 @@ for (g in sort(unique(par2Data$gridSize))) {
                    y = "Speedup") +
               defaultTheme +
               machineLabs)
-    ggsave(paste0(SAVE_LOCATION, paste0("optPar-gridSize", g, "-speedup.png"))), dpi = 300)
+    ggsave(paste0(SAVE_LOCATION, paste0("optPar-gridSize", g, "-speedup.png")), dpi = 300)
+    
+    write.csv(varyThreadsData, paste0("optPart-gridSize", g, "-varyThreads.csv"), row.names = FALSE)
 }
 
 rm(list=ls())
