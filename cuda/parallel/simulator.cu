@@ -8,51 +8,106 @@
 #define SLOW_FACTOR 1
 #define NO_COLLISION 2
 
-__host__ void simulate(void);
+__host__ void simulate();
+__host__ void printAll(bool, int, int, particle_t**);
 __host__ void resolveValidCollisions(collision_t**, int*, double, double);
 __host__ void filterCollisions(collision_t**, bool*, int*);
 __host__ int cmpCollision(const void*, const void*);
 
-__host__ int main() {
+cudaError_t allocStatus;
+
+// Shared simulation parameters
+__constant__ int n, s;
+__constant__ double l, r;
+
+// Shared data
+__managed__ int* numCollisions;
+__managed__ particle_t** ps;
+__managed__ bool* states;
+__managed__ collision_t** cs;
+
+__host__ void assertMallocSuccess(char* buff) {
+    if (allocStatus != cudaSuccess) {
+        printf("Failed to dynamically allocate memory for %s\n", buff);
+        printf("%s\n", cudaGetErrorString(allocStatus));
+        exit(1);
+    }
+}
+
+__host__ int main(int argc, char** argv) {
+    int hostN, hostL, hostR, hostS;
+    bool willPrint;
+
+    // Read in N, L, r, S and finally simulation mode
+    scanf("%d\n%lf\n%lf\n%d\n", &hostN, &hostL, &hostR, &hostS);
+    char* buffer = (char*) malloc(sizeof(char) * 140);
+    scanf("%s\n", buffer);
+
+    // Determine if this simulation will run in 'print' or 'perf' mode
+    if(strcmp(buffer, "print") == 0) {
+        willPrint = true;
+    } else if (strcmp(buffer, "perf") == 0) {
+        willPrint = false;
+    } else {
+        printf("Neither 'print' or 'perf' words are present. Exiting...\n");
+        exit(1);
+    }
+    
+    // Determine if there is a need to randomise particles
+    int i;
+    double x, y, v_x, v_y;
+    bool isInitialised = false;
+    allocStatus = cudaMallocManaged((void**) &ps, hostN * sizeof(particle_t*));
+    assertMallocSuccess("particle_t** ps");
+
+    // If initial positions and velocities of particles are provided, read them
+    while (fgets(buffer, 140, stdin) != EOF) {
+        isInitialised = true;
+        sscanf(buffer, "%d %lf %lf %lf %lf", &i, &x, &y, &v_x, &v_y);
+        particles[i] = build_particle(i, x, y, v_x / slowFactor, v_y / slowFactor);
+    }
+
+    // Otherwise randomise the initial positions and velocities
+    if (!isInitialised) randomiseParticles(particles, slowFactor, p->n, p->l, p->r);
+    free(buffer);
+
+    // Copy to GPU constant memory
+    cudaMemcpyToSymbol(n, &hostN, sizeof(n));
+    cudaMemcpyToSymbol(l, &hostL, sizeof(l));
+    cudaMemcpyToSymbol(r, &hostR, sizeof(r));
+    cudaMemcpyToSymbol(s, &hostS, sizeof(s));
+
+    // Initialise global collision counter
+    allocStatus = cudaMallocManaged((void**) &numCollisions, sizeof(int));
+    assertMallocSuccess("int* numCollisions");
+
+    // Initialise global particle collision state array
+    allocStatus = cudaMallocManaged((void**) &states, hostN * sizeof(bool));
+    assertMallocSuccess("bool* states");
+
+    for (int i = 0; i < hostN; i++) {
+        states[i] = false;
+    }
+    
+    // Initialise global collisions array - keep up to 8N collision candidates
+    allocStatus = cudaMallocManaged((void**) &cs, 8 * hostN * sizeof(collision_t*));
+    assertMallocSuccess("collision_t** cs");
+
     simulate();
+    
     return 0;
 }
 
 __host__ void simulate() {
-    params_t* params = read_file(SLOW_FACTOR);
-
-    if (DEBUG_LEVEL > 3) {
-        printf("%d %lf %lf %d\n", params->n, params->l, params->r, params->s);
-        printf("Simulation printing: %d\n", params->willPrint);
-    }
-
-    int n = params->n;
-    double l = params->l;
-    double r = params->r;
-    int s = params->s * SLOW_FACTOR;
-    bool willPrint = params->willPrint;
-    particle_t** ps = params->particles;
-
-    printAll(false, n, 0, ps);
-
-    int* numCollisions = (int*) malloc(sizeof(int));
-    bool* states = (bool*) malloc(sizeof(bool) * n);
-    for (int i = 0; i < n; i++) {
-        states[i] = false;
-    }
-    collision_t** cs = (collision_t**) malloc(sizeof(collision_t*) * n * n / 2); 
-
+    // Unconditionally print the starting state of the simulation
+    printAll(false, hostN, 0, ps);
+    
     for (int step = 1; step <= s; step++) {
-        if (DEBUG_LEVEL > 3) printf("Step %d\n", step);
         *numCollisions = 0;
 
         // ===== CHECKING AND ADDING COLLISION CANDIDATES =====
         for (int p = 0; p < n; p++) {
-            if (DEBUG_LEVEL > 2) printf("Particle %d is p\n", p);
             double wallTime = checkWallCollision(r, l, ps[p]);
-            if (DEBUG_LEVEL > 2)
-                printf("Particle %d collides with wall at %lf\n", p, wallTime);
-
             if (wallTime != NO_COLLISION) {
                 collision_t* candidate = build_collision(ps[p], NULL, wallTime);
                 // #pragma CS
@@ -62,7 +117,6 @@ __host__ void simulate() {
             }
 
             for (int q = p + 1; q < n; q++) {
-                if (DEBUG_LEVEL > 2) printf("Particle %d is q\n", q);
                 double time = checkCollision(r, ps[p], ps[q]);
 
                 if (time != NO_COLLISION) {
@@ -75,30 +129,35 @@ __host__ void simulate() {
             }
         }
 
-        if (DEBUG_LEVEL > 1) printf("%d collisions for step %d", *numCollisions, step);
-
         // ===== FILTER COLLISION CANDIDATES TO VALID COLLISION =====
         filterCollisions(cs, states, numCollisions);
-        if (DEBUG_LEVEL > 3) printf("FILTER\n");
-
+        
         // ===== RESOLVE VALID COLLISIONS =====
         resolveValidCollisions(cs, numCollisions, l, r);
 
-        if (DEBUG_LEVEL > 2) {
-            for (int i = 0; i < *numCollisions; i++) {
-                printf("%s\n", collision_string(cs[i]));
-            }
-        }
-
         updateParticles(ps, n, states);
-        if (DEBUG_LEVEL > 3) printf("UPDATE PARTICLES\n");
 
         // ===== PRINT SIMULATION DETAILS =====
         if (step == s) printAll(true, n, step, ps);
         else if (willPrint) printAll(false, n, step, ps);
     }
+    
+    return 0;
+}
 
-    if (DEBUG_LEVEL > 3) printf("SIMULATION COMPLETE\n");
+__host__ void printAll(bool includeCollisions, int n, int step,
+        particle_t** particles) {
+    // Parallelise this
+    for (int i = 0; i < n; i++) {
+        char* details;
+        if (includeCollisions) {
+            details = particle_string_full(particles[i]);
+        } else {
+            details = particle_string(particles[i]);
+        }
+        printf("%d %s", step, details);
+        free(details);
+    }
 }
 
 // Filters the collisions according to the time that it took place

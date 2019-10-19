@@ -3,15 +3,6 @@
 #include <string.h>
 #include <stdbool.h>
 
-typedef struct params_t {
-    int n;
-    double l;
-    double r;
-    int s;
-    bool willPrint;
-    particle_t** particles;
-} params_t;
-
 typedef struct particle_t {
     int id;
     double x;
@@ -27,9 +18,6 @@ typedef struct collision_t {
     particle_t* q;
     double time;
 } collision_t;
-
-__host__ params_t* params();
-__host__ void free_params(params_t*);
 
 __device__ collision_t* build_collision(particle_t*, particle_t*, double);
 __device__ void free_collision(collision_t*);

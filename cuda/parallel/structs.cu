@@ -1,15 +1,5 @@
 #include "structs.h"
 
-// Initialises a new parameter struct to store simulation parameters
-__host__ params_t* params() {
-    return (params_t*) malloc(sizeof(params_t));
-}
-
-// Destroys a built parameter struct
-__host__ void free_params(params_t* params) {
-    free(params);
-}
-
 // Initialises a new collision
 __device__ collision_t* build_collision(particle_t* p, particle_t* q, double time) {
     collision_t* collision = (collision_t*) malloc(sizeof(collision_t));
