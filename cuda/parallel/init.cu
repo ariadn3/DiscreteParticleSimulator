@@ -7,7 +7,7 @@ __host__ void randomiseParticles(particle_t* particleArray, int slowFactor, int 
     double* veloArray = generateVelocity(slowFactor, n, L, r);
     
     for (int i = 0; i < n; i++) {
-        particleArray[i].i = i;
+        particleArray[i].id = i;
         particleArray[i].x = posArray[2 * i];
         particleArray[i].y = posArray[2 * i + 1];
         particleArray[i].v_x = veloArray[2 * i];
@@ -66,14 +66,14 @@ __host__ double* generateVelocity(int slowFactor, int n, double L, double r) {
     double maxVelocity = L / (4 * slowFactor);
     double velocityRange = maxVelocity - minVelocity;
     double minPolarAngle = 0, maxPolarAngle = 2 * M_PI;
-    double angleRange = maxPolarAngle - minPolarANgle;
+    double angleRange = maxPolarAngle - minPolarAngle;
     double v, theta;
 
     for (int i = 0; i < n; i++) {
         v = minVelocity + velocityRange * (rand() / (double)RAND_MAX);
-        theta = minAngle + angleRange * (rand() / (double)RAND_MAX);
-        veloArray[2 * i] = v * cos(angle);
-        veloArray[2 * i + 1] = v * sin(angle);
+        theta = minPolarAngle + angleRange * (rand() / (double)RAND_MAX);
+        veloArray[2 * i] = v * cos(theta);
+        veloArray[2 * i + 1] = v * sin(theta);
     }
     return veloArray;
 }
