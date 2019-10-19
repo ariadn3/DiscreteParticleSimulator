@@ -1,17 +1,17 @@
 #include <math.h>
 
-#include "filter.h"
-#include "io.h"
-#include "kinematics.h"
-#include "particle.h"
+#include "init.h"
+#include "kernels.h"
+#include "structs.h"
 
 #define DEBUG_LEVEL 0
 #define SLOW_FACTOR 1
 #define NO_COLLISION 2
 
 __host__ void simulate(void);
-__global__ double checkWallCollision(double, double, particle_t*);
-__global__ double checkCollision(double, particle_t*, particle_t*);
+__host__ void resolveValidCollisions(collision_t**, int*, double, double);
+__host__ void filterCollisions(collision_t**, bool*, int*);
+__host__ int cmpCollision(const void*, const void*);
 
 __host__ int main() {
     simulate();
@@ -101,78 +101,68 @@ __host__ void simulate() {
     if (DEBUG_LEVEL > 3) printf("SIMULATION COMPLETE\n");
 }
 
-double checkWallCollision(double r, double l, particle_t* p) {    
-    // Collision times with vertical and horizontal walls
-    double x_time = NO_COLLISION;
-    double y_time = NO_COLLISION;
+// Filters the collisions according to the time that it took place
+__host__ void filterCollisions(collision_t** collisionArray, bool* hasCollided,
+        int* numCollisions) {
+    // Quicksort all collision candidates with the comparator function
+    qsort(collisionArray, *numCollisions, sizeof(collision_t*), &cmpCollision);
 
-    double margin = r + EDGE_TOLERANCE;
-    // Particle's position after 1 time step
-    double x1 = p->x + p->v_x;
-    double y1 = p->y + p->v_y;
+    int saveIndex = 0;
+    collision_t* curCollision;
+    for (int curIndex = 0; curIndex < *numCollisions; curIndex++) {
+        curCollision = collisionArray[curIndex];
+        
+        // printf("=== Particle %d and %d collided ===\n", curCollision->p->id,
+        //         curCollision->q == NULL ? -1 : curCollision->q->id);
+        if (hasCollided[curCollision->p->id]
+                || (curCollision->q != NULL && hasCollided[curCollision->q->id])) {
+            // Particle p has already collided OR particle q has already collided
+            // -> discard this colision candidate
+            free_collision(curCollision);
+        } else {
+            // Collision candidate is valid - marked p, q as collided
+            hasCollided[curCollision->p->id] = true;
 
-    // Check if particle would intersect a vertical wall after 1 time step
-    // If yes -> compute the time this would happen
-    // Also check: if x-velocity is 0 but particle collides with wall
-    // -> moving along horizontal wall -> don't try to divide by 0
-    if (p->v_x != 0) {
-        if (x1 < margin) {
-            x_time = (p->x - r) / -(p->v_x); 
-        } else if (x1 > l - margin) {
-            x_time = (l - r - p->x) / (p->v_x);
+            if (curCollision-> q != NULL) hasCollided[curCollision->q->id] = true;
+            // Re-use collision candidates array to store valid collisions
+            collisionArray[saveIndex] = collisionArray[curIndex];
+            saveIndex++;
         }
     }
 
-    // Check if particle would intersect a horizontal wall after 1 time step
-    // If yes -> compute the time this would happen
-    // Also check: if y-velocity is 0 but particle collides with wall
-    // -> moving along vertical wall -> don't try to divide by 0
-    if (p->v_y != 0) {
-        if (y1 < margin) {
-            y_time = (p->y - r) / -(p->v_y);
-        } else if (y1 > l - margin) {
-            y_time = (l - r - p->y) / (p->v_y);
-        }
-    }
-
-    // printf("%lf %lf %lf %lf\n", x_time, y_time, x1, y1);
-
-    // Pick earlier of two times the particle would collide with a wall
-    return x_time < y_time ? x_time : y_time;
+    *numCollisions = saveIndex;
 }
 
-double checkCollision(double r, particle_t* p, particle_t* q) {
-    // Difference in X and Y positions and velocities of particles P, Q
-    double dX = q->x - p->x;
-    double dY = q->y - p->y;
-    double dVx = q->v_x - p->v_x;
-    double dVy = q->v_y - p->v_y;
-
-    // 0 <= dT <= 1 is the fraction of a time step
-    // A, B, C are the coefficients of the (dT)^2, dT and 0-th order terms in
-    // the quadratic equation describing distance between particles P, Q at time dT
-    double A = dVx * dVx + dVy * dVy;
-    double B = 2 * (dX * dVx + dY * dVy);
-    double C = dX * dX + dY * dY - 4 * r * r;
-
-    double discriminant = B * B - 4 * A * C;
-
-    if (discriminant <= 0) {
-        return NO_COLLISION;
-    }
+// Comparator for sorting collisions, earlier time then smaller particle 'p' id
+__host__ int cmpCollision(const void* collisionA, const void* collisionB) {
+    collision_t* firstCollision = *(collision_t**) collisionA;
+    collision_t* secondCollision = *(collision_t**) collisionB;
     
-    // Distance curve y = d(t) is concave up and intersects y = 2r at two points
-    // First intersect (root) is at smaller dT and we only compute this
-
-    // Possible that two particles are currently phasing through (i.e. d(0) < 2r)
-    // since only 1 collision was computed per particle -> we ignore any first roots
-    // that are dT < 0
-    double dT = (-B - sqrt(discriminant)) / 2 / A;
-
-    if (dT >= 0 && dT <= 1) {
-        return dT;
+    if (firstCollision->time == secondCollision->time) {
+        // If both collisions involve the same first particle
+        // Then prioritize wall collision, otherwise prioritize lower 2nd particle ID
+        if (firstCollision->p->id == secondCollision->p->id) {
+            if (firstCollision->q == NULL) return -1;
+            else if (secondCollision->q == NULL) return 1;
+            else return (firstCollision->q->id < secondCollision->q->id) ? -1 : 1;
+        }
+        // If two collisions occur at exactly the same time
+        // Then prioritise the one which involves the particle P with lower ID
+        return (firstCollision->p->id < secondCollision->p->id) ? -1 : 1;
     } else {
-        return NO_COLLISION;
+        // Otherwise prioritise the collision occurring at an earlier time
+        return (firstCollision->time < secondCollision->time) ? -1 : 1;
+    }
+}
+
+// Updates particles involved in all valid collisions in collision array
+__host__ void resolveValidCollisions(collision_t** collisionArray, int* numCollisions,
+        double L, double r) {
+    collision_t* curCollision;
+    for (int i = 0; i < *numCollisions; i++) {
+        curCollision = collisionArray[i];
+        settleCollision(curCollision, L, r);
+        free_collision(curCollision);
     }
 }
 

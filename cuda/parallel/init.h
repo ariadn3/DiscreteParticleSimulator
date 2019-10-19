@@ -1,11 +1,11 @@
-#include <stdio.h>
-#include <stdlib.h>
-#include <stdbool.h>
 #include <math.h>
 
-#include "particle.h"
+#include "structs.h"
 
 #define SEED 3210
+
+__host__ params_t* read_file(int slowFactor);
+__host__ void printAll(bool, int, int, particle_t**);
 
 __host__ void randomiseParticles(particle_t**, int, int, double, double);
 __host__ double* generatePosition(int, double, double);
