@@ -9,9 +9,9 @@
 #define NO_COLLISION 2
 
 __host__ void simulate();
-__host__ void printAll(bool, int, int, particle_t**);
-__host__ void resolveValidCollisions(collision_t**, int*, double, double);
-__host__ void filterCollisions(collision_t**, bool*, int*);
+__host__ void printAll(bool, int, int, particle_t*);
+__host__ void resolveValidCollisions(collision_t*, int*, double, double);
+__host__ void filterCollisions(collision_t*, bool*, int*);
 __host__ int cmpCollision(const void*, const void*);
 
 cudaError_t allocStatus;
@@ -21,10 +21,10 @@ __constant__ int n, s;
 __constant__ double l, r;
 
 // Shared data
-__managed__ int* numCollisions;
-__managed__ particle_t** ps;
+__managed__ int numCollisions;
+__managed__ particle_t* ps;
 __managed__ bool* states;
-__managed__ collision_t** cs;
+__managed__ collision_t* cs;
 
 __host__ void assertMallocSuccess(char* buff) {
     if (allocStatus != cudaSuccess) {
@@ -57,7 +57,7 @@ __host__ int main(int argc, char** argv) {
     int i;
     double x, y, v_x, v_y;
     bool isInitialised = false;
-    allocStatus = cudaMallocManaged((void**) &ps, hostN * sizeof(particle_t*));
+    allocStatus = cudaMallocManaged((void**) &ps, hostN * sizeof(particle_t));
     assertMallocSuccess("particle_t** ps");
 
     // If initial positions and velocities of particles are provided, read them
@@ -90,7 +90,7 @@ __host__ int main(int argc, char** argv) {
     }
     
     // Initialise global collisions array - keep up to 8N collision candidates
-    allocStatus = cudaMallocManaged((void**) &cs, 8 * hostN * sizeof(collision_t*));
+    allocStatus = cudaMallocManaged((void**) &cs, 8 * hostN * sizeof(collision_t));
     assertMallocSuccess("collision_t** cs");
 
     simulate();
@@ -103,7 +103,7 @@ __host__ void simulate() {
     printAll(false, hostN, 0, ps);
     
     for (int step = 1; step <= s; step++) {
-        *numCollisions = 0;
+        numCollisions = 0;
 
         // ===== CHECKING AND ADDING COLLISION CANDIDATES =====
         for (int p = 0; p < n; p++) {
@@ -141,19 +141,23 @@ __host__ void simulate() {
         if (step == s) printAll(true, n, step, ps);
         else if (willPrint) printAll(false, n, step, ps);
     }
-    
+
+    cudaFree(numCollisions);
+    cudaFree(ps);
+    cudaFree(states);
+    cudaFree(cs);
+
     return 0;
 }
 
-__host__ void printAll(bool includeCollisions, int n, int step,
-        particle_t** particles) {
-    // Parallelise this
-    for (int i = 0; i < n; i++) {
+__host__ void printAll(bool includeCollisions, int step, particle_t* particles)
+{
+    for (int i = 0; i < hostN; i++) {
         char* details;
         if (includeCollisions) {
-            details = particle_string_full(particles[i]);
+            details = particle_string_full(&particles[i]);
         } else {
-            details = particle_string(particles[i]);
+            details = particle_string(&particles[i]);
         }
         printf("%d %s", step, details);
         free(details);
@@ -161,64 +165,63 @@ __host__ void printAll(bool includeCollisions, int n, int step,
 }
 
 // Filters the collisions according to the time that it took place
-__host__ void filterCollisions(collision_t** collisionArray, bool* hasCollided,
-        int* numCollisions) {
+__host__ void filterCollisions(collision_t* collisionArray, bool* hasCollided) {
     // Quicksort all collision candidates with the comparator function
-    qsort(collisionArray, *numCollisions, sizeof(collision_t*), &cmpCollision);
+    qsort(collisionArray, numCollisions, sizeof(collision_t), cmpCollision);
 
     int saveIndex = 0;
-    collision_t* curCollision;
-    for (int curIndex = 0; curIndex < *numCollisions; curIndex++) {
+    collision_t curCollision;
+
+    // Walk down collision array and retain valid collisions
+    for (int curIndex = 0; curIndex < numCollisions; curIndex++) {
         curCollision = collisionArray[curIndex];
         
-        // printf("=== Particle %d and %d collided ===\n", curCollision->p->id,
-        //         curCollision->q == NULL ? -1 : curCollision->q->id);
-        if (hasCollided[curCollision->p->id]
-                || (curCollision->q != NULL && hasCollided[curCollision->q->id])) {
+        if (hasCollided[curCollision.p->id]
+                || (curCollision.q != NULL && hasCollided[curCollision.q->id])) {
             // Particle p has already collided OR particle q has already collided
             // -> discard this colision candidate
-            free_collision(curCollision);
+            // DO NOTHING (allow this struct to be overwritten later)
         } else {
             // Collision candidate is valid - marked p, q as collided
-            hasCollided[curCollision->p->id] = true;
+            hasCollided[curCollision.p->id] = true;
 
-            if (curCollision-> q != NULL) hasCollided[curCollision->q->id] = true;
+            if (curCollision. q != NULL) hasCollided[curCollision.q->id] = true;
             // Re-use collision candidates array to store valid collisions
             collisionArray[saveIndex] = collisionArray[curIndex];
             saveIndex++;
         }
     }
 
-    *numCollisions = saveIndex;
+    numCollisions = saveIndex;
 }
 
 // Comparator for sorting collisions, earlier time then smaller particle 'p' id
 __host__ int cmpCollision(const void* collisionA, const void* collisionB) {
-    collision_t* firstCollision = *(collision_t**) collisionA;
-    collision_t* secondCollision = *(collision_t**) collisionB;
+    collision_t firstCollision = *(collision_t*) collisionA;
+    collision_t secondCollision = *(collision_t*) collisionB;
     
-    if (firstCollision->time == secondCollision->time) {
+    if (firstCollision.time == secondCollision.time) {
         // If both collisions involve the same first particle
         // Then prioritize wall collision, otherwise prioritize lower 2nd particle ID
-        if (firstCollision->p->id == secondCollision->p->id) {
-            if (firstCollision->q == NULL) return -1;
-            else if (secondCollision->q == NULL) return 1;
-            else return (firstCollision->q->id < secondCollision->q->id) ? -1 : 1;
+        if (firstCollision.p->id == secondCollision.p->id) {
+            if (firstCollision.q == NULL) return -1;
+            else if (secondCollision.q == NULL) return 1;
+            else return (firstCollision.q->id < secondCollision.q->id) ? -1 : 1;
         }
         // If two collisions occur at exactly the same time
         // Then prioritise the one which involves the particle P with lower ID
-        return (firstCollision->p->id < secondCollision->p->id) ? -1 : 1;
+        return (firstCollision.p->id < secondCollision.p->id) ? -1 : 1;
     } else {
         // Otherwise prioritise the collision occurring at an earlier time
-        return (firstCollision->time < secondCollision->time) ? -1 : 1;
+        return (firstCollision.time < secondCollision.time) ? -1 : 1;
     }
 }
 
 // Updates particles involved in all valid collisions in collision array
-__host__ void resolveValidCollisions(collision_t** collisionArray, int* numCollisions,
-        double L, double r) {
+__host__ void resolveValidCollisions(collision_t* collisionArray)) {
     collision_t* curCollision;
-    for (int i = 0; i < *numCollisions; i++) {
+    
+    for (int i = 0; i < numCollisions; i++) {
         curCollision = collisionArray[i];
         settleCollision(curCollision, L, r);
         free_collision(curCollision);

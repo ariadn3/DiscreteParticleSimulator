@@ -19,12 +19,7 @@ typedef struct collision_t {
     double time;
 } collision_t;
 
-__device__ collision_t* build_collision(particle_t*, particle_t*, double);
-__device__ void free_collision(collision_t*);
 __host__ char* collision_string(collision_t*);
-
-__host__ particle_t* build_particle(int, double, double, double, double);
-__host__ void free_particle(particle_t*);
 __host__ char* particle_string(particle_t*);
 __host__ char* particle_string_full(particle_t*);
 

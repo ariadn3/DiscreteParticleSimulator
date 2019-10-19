@@ -1,23 +1,5 @@
 #include "structs.h"
 
-// Initialises a new collision
-__device__ collision_t* build_collision(particle_t* p, particle_t* q, double time) {
-    collision_t* collision = (collision_t*) malloc(sizeof(collision_t));
-
-    collision->p = p;
-    collision->q = q;
-    collision->time = time;
-
-    return collision;
-}
-
-// Destroys a built collision
-__device__ void free_collision(collision_t* collision) {
-    collision->p = NULL;
-    collision->q = NULL;
-    free(collision);
-}
-
 // Returns a C string with the details of this collision
 __host__ char* collision_string(collision_t* c) {
     char* details = (char*) (malloc(sizeof(char) * 120));
@@ -25,27 +7,6 @@ __host__ char* collision_string(collision_t* c) {
     sprintf(details, "Collision between particles with ids: %d and %d @ %.14f",
             c->p->id, c->q->id, c->time);
     return details;
-}
-
-// Initialises a new particle
-__host__ particle_t* build_particle(int id, double x, double y, double v_x,
-        double v_y) {
-    particle_t* particle = (particle_t*) malloc(sizeof(particle_t));
-
-    particle->id = id;
-    particle->x = x;
-    particle->y = y;
-    particle->v_x = v_x;
-    particle->v_y = v_y;
-    particle->w_collisions = 0;
-    particle->p_collisions = 0;
-
-    return particle;
-}
-
-// Destroys a built particle
-__host__ void free_particle(particle_t* particle) {
-    free(particle);
 }
 
 // Returns a C string with the details of this particle
