@@ -55,6 +55,10 @@ void settleCollision(collision_t* curCollision, double L, double r) {
 
     // If the collision is against the wall, toggle directions
     if (B == NULL) {
+        if (false && (A->id == 976 || A->id == 975)) {
+            printf("Particle %d: %.20lf %.20lf\n", A->id,
+            A->x - r - EDGE_TOLERANCE, A->y - r - EDGE_TOLERANCE);
+        }
         // Add to wall collision counter of A
         A->w_collisions += 1;
         // printf("Step %.14lf: particle %d collided with wall\n", time, A->id);
@@ -132,6 +136,7 @@ void settleCollision(collision_t* curCollision, double L, double r) {
     // If particle A will collide against the wall, check when it will collide
     // with the nearest wall and take that time
     double time_ax = 1 - time, time_ay = 1 - time;
+    
     if (A->v_x != 0) {
         if (A->x + time_ax * A->v_x < r) time_ax = -(A->x - r) / A->v_x;
         else if (A->x + time_ax * A->v_x > L - r) time_ax = (L - r - A->x) / A->v_x;
