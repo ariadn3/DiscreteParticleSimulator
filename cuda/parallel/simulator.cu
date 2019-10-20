@@ -27,6 +27,8 @@ cudaError_t allocStatus;
 // Shared simulation parameters
 __constant__ int n, s;
 __constant__ double l, r;
+__constant__ double minPosMargin, maxPosMargin;
+__constant__ double maxPos;
 
 // Shared data
 __managed__ int numCollisions;
@@ -81,12 +83,19 @@ __host__ int main(int argc, char** argv) {
 
     // Otherwise randomise the initial positions and velocities
     if (!isInitialised) randomiseParticles(ps, SLOW_FACTOR, hostN, hostL, hostR);
+    
+    double minMargin = hostR + EDGE_TOLERANCE;
+    double maxMargin = hostL - hostR - EDGE_TOLERANCE;
+    double max = hostL - hostR;
 
     // Copy to GPU constant memory
     cudaMemcpyToSymbol(n, &hostN, sizeof(n));
     cudaMemcpyToSymbol(l, &hostL, sizeof(l));
     cudaMemcpyToSymbol(r, &hostR, sizeof(r));
     cudaMemcpyToSymbol(s, &hostS, sizeof(s));
+    cudaMemcpyToSymbol(maxPos, &max, sizeof(max));
+    cudaMemcpyToSymbol(minPosMargin, &minMargin, sizeof(minMargin));
+    cudaMemcpyToSymbol(maxPosMargin, &maxMargin, sizeof(maxMargin));
 
     // Initialise global collision counter
     allocStatus = cudaMallocManaged((void**) &numCollisions, sizeof(int));
@@ -251,7 +260,6 @@ __global__ void checkWallCollision() {
     double x_time = NO_COLLISION;
     double y_time = NO_COLLISION;
 
-    double margin = r + EDGE_TOLERANCE;
     // Particle's position after 1 time step
     double x1 = p.x + p.v_x;
     double y1 = p.y + p.v_y;
@@ -261,10 +269,10 @@ __global__ void checkWallCollision() {
     // Also check: if x-velocity is 0 but particle collides with wall
     // -> moving along horizontal wall -> don't try to divide by 0
     if (p.v_x != 0) {
-        if (x1 < margin) {
+        if (x1 < minPosMargin) {
             x_time = (p.x - r) / -(p.v_x); 
-        } else if (x1 > l - margin) {
-            x_time = (l - r - p.x) / (p.v_x);
+        } else if (x1 > maxPosMargin) {
+            x_time = (maxPos - p.x) / (p.v_x);
         }
     }
 
@@ -273,10 +281,10 @@ __global__ void checkWallCollision() {
     // Also check: if y-velocity is 0 but particle collides with wall
     // -> moving along vertical wall -> don't try to divide by 0
     if (p.v_y != 0) {
-        if (y1 < margin) {
+        if (y1 < minPosMargin) {
             y_time = (p.y - r) / -(p.v_y);
-        } else if (y1 > l - margin) {
-            y_time = (l - r - p.y) / (p.v_y);
+        } else if (y1 > maxPosMargin) {
+            y_time = (maxPos - p.y) / (p.v_y);
         }
     }
 
@@ -392,9 +400,9 @@ __global__ void settleCollision() {
         // Add to wall collision counter of A
         A->w_collisions += 1;
         // printf("Step %.14lf: particle %d collided with wall\n", time, A->id);
-        if (A->x <= r + EDGE_TOLERANCE || A->x >= l - r - EDGE_TOLERANCE)
+        if (A->x <= minPosMargin || A->x >= maxPosMargin)
             A->v_x = A->v_x * -1;
-        if (A->y <= r + EDGE_TOLERANCE || A->y >= l - r - EDGE_TOLERANCE)
+        if (A->y <= minPosMargin || A->y >= maxPosMargin)
             A->v_y = A->v_y * -1;
     }
     // If collision is against another particle
@@ -445,14 +453,14 @@ __global__ void settleCollision() {
         double time_bx = 1 - time, time_by = 1 - time;
         if (B->v_x != 0) {
             if (B->x + time_bx * B->v_x < r) time_bx = -(B->x - r) / B->v_x;
-            else if (B->x + time_bx * B->v_x > l - r)
-                time_bx = (l - r - B->x) / B->v_x;
+            else if (B->x + time_bx * B->v_x > maxPos)
+                time_bx = (maxPos - B->x) / B->v_x;
         }
 
         if (B->v_y != 0) {
             if (B->y + time_by * B->v_y < r) time_by = -(B->y - r) / B->v_y;
-            else if (B->y + time_by * B->v_y > l - r)
-                time_by = (l - r - B->y) / B->v_y;
+            else if (B->y + time_by * B->v_y > maxPos)
+                time_by = (maxPos - B->y) / B->v_y;
         }
 
         // If B collides with two walls after colliding with A, take lesser of
@@ -470,12 +478,12 @@ __global__ void settleCollision() {
     
     if (A->v_x != 0) {
         if (A->x + time_ax * A->v_x < r) time_ax = -(A->x - r) / A->v_x;
-        else if (A->x + time_ax * A->v_x > l - r) time_ax = (l - r - A->x) / A->v_x;
+        else if (A->x + time_ax * A->v_x > maxPos) time_ax = (maxPos - A->x) / A->v_x;
     }
 
     if (A->v_y != 0) {
         if (A->y + time_ay * A->v_y < r) time_ay = -(A->y - r)/ A->v_y;
-        else if (A->y + time_ay * A->v_y > l - r) time_ay = (l - r - A->y) / A->v_y;
+        else if (A->y + time_ay * A->v_y > maxPos) time_ay = (maxPos - A->y) / A->v_y;
     }
 
     // If A collides with another wall after colliding, take lesser of two times
