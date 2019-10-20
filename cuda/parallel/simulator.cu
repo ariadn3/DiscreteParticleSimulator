@@ -140,28 +140,26 @@ __host__ void simulate() {
         numCollisions = 0;
 
         // ===== CHECKING AND ADDING COLLISION CANDIDATES =====
+        // Both kernels have threads that only read particle data, but add collisions
+        // to a common array (using atomicAdd to protect each index of this array)
         checkWallCollision<<<pwGrid, pwBlock>>>();
-        cudaDeviceSynchronize();
         // You know, we accidentally launched the settleCollision kernel here instead
         // of checkCollision and wondered why particles were colliding 3000 times in
-        // 1 step - we wasted 2 hours on this :')
+        // 1 step - we wasted 3 hours on this :')
         checkCollision<<<ppGrid, ppBlock>>>();
 
         cudaDeviceSynchronize();
 
         // ===== FILTER COLLISION CANDIDATES TO VALID COLLISION =====
         filterCollisions();
-
-        // cudaDeviceSynchronize();
         
         // ===== RESOLVE VALID COLLISIONS =====
         dim3 resolveGrid((numCollisions + resolveChunkSize - 1) / resolveChunkSize);
         dim3 resolveBlock(resolveChunkSize);
 
+        // Both kernels have threads that update different particles
+        // Safe to run concurrently
         settleCollision<<<resolveGrid, resolveBlock>>>();
-
-        // cudaDeviceSynchronize();
-
         updateParticles<<<updateGrid, updateBlock>>>();
         
         cudaDeviceSynchronize();
@@ -247,7 +245,7 @@ __global__ void checkWallCollision() {
    
     particle_t p = ps[index];
     
-    printf("Thread %d checking particle %d\n", index, p.id);
+    // printf("Thread %d checking particle %d\n", index, p.id);
 
     // Collision times with vertical and horizontal walls
     double x_time = NO_COLLISION;
@@ -329,8 +327,6 @@ __global__ void checkCollision() {
     }
 
     // printf("Checking array computation (%d, %d)\n", p.id, q.id);
-
-    __syncthreads();
 
     // Difference in X and Y positions and velocities of particles P, Q
     double dX = q.x - p.x;
