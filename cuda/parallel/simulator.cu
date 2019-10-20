@@ -141,9 +141,6 @@ __host__ void simulate() {
 
         // ===== CHECKING AND ADDING COLLISION CANDIDATES =====
         checkWallCollision<<<pwGrid, pwBlock>>>();
-
-        cudaDeviceSynchronize();
-        
         // You know, we accidentally launched the settleCollision kernel here instead
         // of checkCollision and wondered why particles were colliding 3000 times in
         // 1 step - we wasted 2 hours on this :')
@@ -154,14 +151,12 @@ __host__ void simulate() {
         // ===== FILTER COLLISION CANDIDATES TO VALID COLLISION =====
         filterCollisions();
         
-        cudaDeviceSynchronize();
-        
         // ===== RESOLVE VALID COLLISIONS =====
         dim3 resolveGrid((numCollisions + resolveChunkSize - 1) / resolveChunkSize);
         dim3 resolveBlock(resolveChunkSize);
 
         settleCollision<<<resolveGrid, resolveBlock>>>();
-        
+
         cudaDeviceSynchronize();
 
         updateParticles<<<updateGrid, updateBlock>>>();
@@ -171,8 +166,6 @@ __host__ void simulate() {
         // ===== PRINT SIMULATION DETAILS =====
         if (step == hostS) printAll(true, step);
         else if (willPrint) printAll(false, step);
-
-        cudaDeviceSynchronize();
     }
 }
 
