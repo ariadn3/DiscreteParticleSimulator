@@ -120,7 +120,7 @@ __host__ int main(int argc, char** argv) {
 
 __host__ void simulate() {
     // Unconditionally print the starting state of the simulation
-    // printAll(false, 0);
+    printAll(false, 0);
     
     int pwChunkSize = 32;
     dim3 pwGrid((hostN + pwChunkSize - 1) / pwChunkSize);
@@ -167,8 +167,8 @@ __host__ void simulate() {
         cudaDeviceSynchronize();
         
         // ===== PRINT SIMULATION DETAILS =====
-        // if (step == hostS) printAll(true, step);
-        // else if (willPrint) printAll(false, step);
+        if (step == hostS) printAll(true, step);
+        else if (willPrint) printAll(false, step);
     }
 }
 
@@ -240,64 +240,63 @@ __host__ int cmpCollision(const void* collisionA, const void* collisionB) {
 }
 
 __global__ void checkWallCollision() {
-    int index = blockIdx.x * gridDim.x + threadIdx.x;
+    int index = blockIdx.x * blockDim.x + threadIdx.x;
     
-    if (index >= n) {
-        printf("THREADS SHOULD BE HERE\n");
-    } else {   
-        particle_t p = ps[index];
-        
-        printf("Thread %d checking particle %d\n", index, p.id);
+    if (index >= n)
+        return;
+   
+    particle_t p = ps[index];
+    
+    printf("Thread %d checking particle %d\n", index, p.id);
 
-        // Collision times with vertical and horizontal walls
-        double x_time = NO_COLLISION;
-        double y_time = NO_COLLISION;
+    // Collision times with vertical and horizontal walls
+    double x_time = NO_COLLISION;
+    double y_time = NO_COLLISION;
 
-        double margin = r + EDGE_TOLERANCE;
-        // Particle's position after 1 time step
-        double x1 = p.x + p.v_x;
-        double y1 = p.y + p.v_y;
+    double margin = r + EDGE_TOLERANCE;
+    // Particle's position after 1 time step
+    double x1 = p.x + p.v_x;
+    double y1 = p.y + p.v_y;
 
-        // Check if particle would intersect a vertical wall after 1 time step
-        // If yes -> compute the time this would happen
-        // Also check: if x-velocity is 0 but particle collides with wall
-        // -> moving along horizontal wall -> don't try to divide by 0
-        if (p.v_x != 0) {
-            if (x1 < margin) {
-                x_time = (p.x - r) / -(p.v_x); 
-            } else if (x1 > l - margin) {
-                x_time = (l - r - p.x) / (p.v_x);
-            }
+    // Check if particle would intersect a vertical wall after 1 time step
+    // If yes -> compute the time this would happen
+    // Also check: if x-velocity is 0 but particle collides with wall
+    // -> moving along horizontal wall -> don't try to divide by 0
+    if (p.v_x != 0) {
+        if (x1 < margin) {
+            x_time = (p.x - r) / -(p.v_x); 
+        } else if (x1 > l - margin) {
+            x_time = (l - r - p.x) / (p.v_x);
         }
+    }
 
-        // Check if particle would intersect a horizontal wall after 1 time step
-        // If yes -> compute the time this would happen
-        // Also check: if y-velocity is 0 but particle collides with wall
-        // -> moving along vertical wall -> don't try to divide by 0
-        if (p.v_y != 0) {
-            if (y1 < margin) {
-                y_time = (p.y - r) / -(p.v_y);
-            } else if (y1 > l - margin) {
-                y_time = (l - r - p.y) / (p.v_y);
-            }
+    // Check if particle would intersect a horizontal wall after 1 time step
+    // If yes -> compute the time this would happen
+    // Also check: if y-velocity is 0 but particle collides with wall
+    // -> moving along vertical wall -> don't try to divide by 0
+    if (p.v_y != 0) {
+        if (y1 < margin) {
+            y_time = (p.y - r) / -(p.v_y);
+        } else if (y1 > l - margin) {
+            y_time = (l - r - p.y) / (p.v_y);
         }
+    }
 
-        // printf("%lf %lf %lf %lf\n", x_time, y_time, x1, y1);
+    // printf("%lf %lf %lf %lf\n", x_time, y_time, x1, y1);
 
-        // Pick earlier of two times the particle would collide with a wall
-        double wall_time = x_time < y_time ? x_time : y_time;
-        
-        if (wall_time != NO_COLLISION) {
-            // atomicAdd returns the previous value of that address - we use this as a
-            // ticket for this thread to write a collision to that specific index
-            // Implicitly serves as a critical section
-            int i = atomicAdd(&numCollisions, 1);
-            // printf("CS%d: added by thread %d\n", i, index); 
+    // Pick earlier of two times the particle would collide with a wall
+    double wall_time = x_time < y_time ? x_time : y_time;
+    
+    if (wall_time != NO_COLLISION) {
+        // atomicAdd returns the previous value of that address - we use this as a
+        // ticket for this thread to write a collision to that specific index
+        // Implicitly serves as a critical section
+        int i = atomicAdd(&numCollisions, 1);
+        // printf("CS%d: added by thread %d\n", i, index); 
 
-            cs[i].p = &ps[p.id];
-            cs[i].q = NULL;
-            cs[i].time = wall_time;
-        }
+        cs[i].p = &ps[p.id];
+        cs[i].q = NULL;
+        cs[i].time = wall_time;
     }
 }
 
