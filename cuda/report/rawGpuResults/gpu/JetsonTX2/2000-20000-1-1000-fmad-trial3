@@ -1,0 +1,28 @@
+==15652== NVPROF is profiling process 15652, command: ./withoutfMad
+==15652== Warning: Unified Memory Profiling is not supported on the underlying platform. System requirements for unified memory can be found at: http://docs.nvidia.com/cuda/cuda-c-programming-guide/index.html#um-requirements
+==15652== Profiling application: ./withoutfMad
+==15652== Profiling result:
+"Type","Time(%)","Time","Calls","Avg","Min","Max","Name"
+,%,s,,ms,ms,ms,
+"GPU activities",99.956528,363.421963,1000,363.421962,196.318397,401.304022,"checkCollision(void)"
+"GPU activities",0.025997,0.094521,1000,0.094520,0.088000,0.105791,"checkWallCollision(void)"
+"GPU activities",0.011932,0.043382,1000,0.043381,0.040832,0.046688,"updateParticles(void)"
+"GPU activities",0.005542,0.020150,1000,0.020149,0.017920,0.023360,"settleCollision(void)"
+"GPU activities",0.000001,0.000004,7,0.000621,0.000320,0.001440,"[CUDA memcpy HtoD]"
+"API calls",98.797126,393.517585,2000,196.758792,2.749643,415.330243,"cudaDeviceSynchronize"
+"API calls",0.743238,2.960383,4000,0.740095,0.033631,5.494668,"cudaLaunch"
+"API calls",0.432577,1.722994,1,1722.993590,1722.993590,1722.993590,"cuDevicePrimaryCtxRetain"
+"API calls",0.020263,0.080708,7,11.529663,0.150686,18.412464,"cudaMemcpyToSymbol"
+"API calls",0.004811,0.019165,4000,0.004791,0.000768,0.162558,"cudaConfigureCall"
+"API calls",0.001345,0.005356,4,1.339087,0.026880,4.828288,"cudaFree"
+"API calls",0.000608,0.002420,4,0.605010,0.093823,1.913453,"cudaMallocManaged"
+"API calls",0.000015,0.000060,94,0.000635,0.000320,0.013152,"cuDeviceGetAttribute"
+"API calls",0.000009,0.000037,11,0.003325,0.002336,0.008000,"cuModuleGetGlobal"
+"API calls",0.000003,0.000013,4,0.003200,0.001600,0.007040,"cuModuleGetFunction"
+"API calls",0.000001,0.000006,1,0.005920,0.005920,0.005920,"cuDeviceTotalMem"
+"API calls",0.000001,0.000005,3,0.001504,0.000576,0.002528,"cuDeviceGetCount"
+"API calls",0.000001,0.000002,1,0.002432,0.002432,0.002432,"cuCtxSetCurrent"
+"API calls",0.000001,0.000002,2,0.001024,0.000704,0.001344,"cuDeviceGet"
+"API calls",0.000000,0.000002,2,0.000880,0.000640,0.001120,"cuCtxGetCurrent"
+"API calls",0.000000,0.000001,1,0.001280,0.001280,0.001280,"cuDeviceGetName"
+"API calls",0.000000,0.000001,1,0.000768,0.000768,0.000768,"cuCtxGetDevice"

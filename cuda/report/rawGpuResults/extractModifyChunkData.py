@@ -1,0 +1,50 @@
+import os
+
+unitsMultiplier = {'m': 1e-3}
+_OUTPUT_FILE = 'chunkSizeData.csv'
+_OUTPUT_PARAM_STRINGS = ('N', 'L', 'r', 'steps', '1DchunkSize', '2DchunkSize', 'config', 'machine')
+
+def getNvprofRuntime(file):
+	while True:
+		line = file.readline()
+		if line[0] != '=':
+			break
+
+	units = file.readline().strip().split(',')[2]
+	totalTime = 0
+	for line in file.readlines():
+		line = line.strip()
+		if line == '':
+			break
+		totalTime += float(line.split(',')[2])
+	return unitsMultiplier.get(units[:-1], 1) * totalTime
+
+dataDict = {}
+for root, dirs, files in os.walk('.', topdown = False):
+	for name in files:
+		rootSplit = root.split('/')
+		if len(rootSplit) < 2 or rootSplit[1] != 'modifyChunk':
+			continue
+
+		N, L, r, steps, oneDchunkSize, twoDchunkSize, progType, _ = name.split('-')
+		N = int(N)
+		L = float(L)
+		r = float(r)
+		steps = int(steps)
+		oneDchunkSize = int(oneDchunkSize)
+		twoDchunkSize = int(twoDchunkSize)
+		machine = root.split('/')[2]
+
+		paramTuple = (N, L, r, steps, oneDchunkSize, twoDchunkSize, progType, machine)
+
+		file = open(root + '/' + name, 'r')
+		runtime = getNvprofRuntime(file)
+		file.close()
+
+		if paramTuple not in dataDict or runtime < dataDict[paramTuple]:
+			dataDict[paramTuple] = runtime
+
+with open(_OUTPUT_FILE, 'w') as fileOut:
+	fileOut.write(','.join(_OUTPUT_PARAM_STRINGS) + ',' + 'time' + '\n')
+	for k, v in dataDict.items():
+		fileOut.write(','.join(str(i) for i in k) + ',' + str(v) + '\n')
