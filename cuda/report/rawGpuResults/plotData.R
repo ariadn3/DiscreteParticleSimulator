@@ -2,7 +2,7 @@ library(ggplot2)
 library(dplyr)
 library(tidyr)
 
-SAVE = TRUE
+SAVE = FALSE
 
 # setwd("E:/Brownie/cuda/report/rawResults/")
 cpuData = read.csv("cpuData.csv")
@@ -66,7 +66,7 @@ propData = propData[propData$machine == "TitanRTX" & propData$config == "fmad",]
 propData = propData %>% 
     group_by(N, L, r, steps, config, machine) %>%
     mutate(gpuTotalTime = sum(funcTime)) %>%
-    mutate(gpuProp = funcTime/gpuTotalTime, totalProp = funcTime/gpuTime)
+    mutate(gpuProp = funcTime/gpuTotalTime)
 
 ggplot(propData) +
     geom_point(aes(N, gpuProp, color=functType)) +
@@ -76,13 +76,25 @@ ggplot(propData) +
     defaultTheme
 ifelse(SAVE, ggsave(paste0(SAVE_LOCATION, "titan-fmad-proportion-GPU.png"), dpi = 300))
 
+propData = gather(gpuData, "functType", "funcTime", checkWallCollision:updateParticles)
+propData = propData[propData$machine == "TitanRTX",]
+
 ggplot(propData) +
-    geom_point(aes(N, totalProp, color=functType)) +
-    geom_line(aes(N, totalProp, color=functType)) +
-    geom_hline(yintercept = 1) +
-    theme(legend.position="bottom") + 
+    geom_point(aes(N, funcTime, color=functType)) +
+    geom_line(aes(N, funcTime, color=functType, linetype=config)) +
+    theme() + 
+    defaultTheme 
+ggplot(filter(propData, functType == 'checkCollision')) +
+    geom_point(aes(N, funcTime, color=functType)) +
+    geom_line(aes(N, funcTime, color=functType, linetype=config)) +
+    theme() + 
+    defaultTheme 
+ggplot(filter(propData, functType != 'checkCollision')) +
+    geom_point(aes(N, funcTime, color=functType)) +
+    geom_line(aes(N, funcTime, color=functType, linetype=config)) +
+    theme() + 
     defaultTheme
-ifelse(SAVE, ggsave(paste0(SAVE_LOCATION, "titan-fmad-proportion-Total.png"), dpi = 300))
+ifelse(SAVE, ggsave(paste0(SAVE_LOCATION, "titan-fmad-proportion-GPU.png"), dpi = 300))
 
 rm(propData)
 
@@ -152,3 +164,12 @@ ggplot(diverged) +
 ifelse(SAVE, ggsave(paste0(SAVE_LOCATION, "divergedParticles.png"), dpi = 300), NA)
 
 rm(diverged)
+
+# Collision type analysis
+
+collisions = read.csv("collisionType.csv")
+ggplot(collisions) +
+    geom_point(aes(N, ppCollisions/pwCollisions, color=type), alpha = 0.5) +
+    geom_line(aes(N, ppCollisions/pwCollisions, color=type), alpha = 0.5) +
+    defaultTheme
+ifelse(SAVE, ggsave(paste0(SAVE_LOCATION, "collisionType.png"), dpi = 300), NA)

@@ -17,23 +17,26 @@ def getNvprofStats(file):
 	units = file.readline().strip().split(',')[2]
 	adjustmentRatio = unitsMultiplier.get(units[:-1], 1)
 
-	totalTime = 0
 	for line in file.readlines():
 		line = line.strip()
 		if line == '':
 			break
-		totalTime += float(line.split(',')[2])
 		tag = line.split(',')[-1].replace('"', '')[:-6]
 		if tag in _STATS_TAG:
 			stats[tag] = adjustmentRatio * float(line.split(',')[2])
-	stats[_CLOCK_TAG] = adjustmentRatio * totalTime
 	return stats
+
+def getTimeStats(file):
+	file.readline()
+	realString = file.readline().strip().split('\t')[1].split('m')
+	realString[1] = realString[1][:-1]
+	return int(realString[0])*60 + float(realString[1])
 
 dataDict = {}
 for root, dirs, files in os.walk('.', topdown = False):
 	for name in files:
 		rootSplit = root.split('/')
-		if len(rootSplit) < 2 or rootSplit[1] != 'gpu':
+		if len(rootSplit) < 2 or rootSplit[1] != 'gpu' or name[-5:] == '.time':
 			continue
 
 		N, L, r, steps, progType, _ = name.split('-')
@@ -48,6 +51,10 @@ for root, dirs, files in os.walk('.', topdown = False):
 		file = open(root + '/' + name, 'r')
 		runStats = getNvprofStats(file)
 		file.close()
+
+		timeFile = open(root + '/' + name + '.time', 'r')
+		runStats[_CLOCK_TAG] = getTimeStats(timeFile)
+		timeFile.close()
 
 		if paramTuple not in dataDict or runStats[_CLOCK_TAG] < dataDict[paramTuple][_CLOCK_TAG]:
 			dataDict[paramTuple] = runStats
