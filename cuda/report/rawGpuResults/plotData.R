@@ -2,6 +2,8 @@ library(ggplot2)
 library(dplyr)
 library(tidyr)
 
+SAVE = TRUE
+
 # setwd("E:/Brownie/cuda/report/rawResults/")
 cpuData = read.csv("cpuData.csv")
 gpuData = read.csv("gpuData.csv")
@@ -22,7 +24,7 @@ ggplot(gpuData) +
     labs(x = "N, Particle count",
          y = "Execution time (s)") +
     defaultTheme + machineLabs
-ggsave(paste0(SAVE_LOCATION, "gpu-varyN-withJetson.png"), dpi = 300)
+ifelse(SAVE, ggsave(paste0(SAVE_LOCATION, "gpu-varyN-withJetson.png"), dpi = 300), NA)
 
 gpuData = gpuData[!(gpuData$machine == "JetsonTX2"),]
 
@@ -32,7 +34,7 @@ ggplot(gpuData) +
     labs(x = "N, Particle count",
          y = "Execution time (s)") +
     defaultTheme + machineLabs
-ggsave(paste0(SAVE_LOCATION, "gpu-varyN.png"), dpi = 300)
+ifelse(SAVE, ggsave(paste0(SAVE_LOCATION, "gpu-varyN.png"), dpi = 300), NA)
 
 ggplot(cpuData) + 
     geom_point(aes(N, time)) +
@@ -40,7 +42,7 @@ ggplot(cpuData) +
     labs(x = "N, Particle count",
          y = "Execution time (s)") +
     defaultTheme + machineLabs
-ggsave(paste0(SAVE_LOCATION, "cpu-varyN.png"), dpi = 300)
+ifelse(SAVE, ggsave(paste0(SAVE_LOCATION, "cpu-varyN.png"), dpi = 300), NA)
 
 colnames(cpuData)[which(colnames(cpuData) == "time")] = "cpuTime"
 colnames(gpuData)[which(colnames(gpuData) == "time")] = "gpuTime"
@@ -50,11 +52,12 @@ varyNData$speedup = varyNData$cpuTime / varyNData$gpuTime
 ggplot(varyNData) +
     geom_point(aes(N, speedup, color=machine)) +
     geom_line(aes(N, speedup, color=machine, linetype=config)) +
-    labs(title = "Plot of speedup against particle count",
-         x = "N, Particle count",
+    labs(x = "N, Particle count",
          y = "Speedup") +
     defaultTheme + machineLabs
-ggsave(paste0(SAVE_LOCATION, "gpu-speedup.png"), dpi=300)
+ifelse(SAVE, ggsave(paste0(SAVE_LOCATION, "gpu-speedup.png"), dpi=300))
+
+rm(varyNData)
 
 ### Analysis of GPU Kernel runtimes ###
 
@@ -71,7 +74,7 @@ ggplot(propData) +
     geom_hline(yintercept = 1) +
     theme(legend.position="bottom") + 
     defaultTheme
-ggsave(paste0(SAVE_LOCATION, "titan-fmad-proportion-GPU.png"), dpi = 300)
+ifelse(SAVE, ggsave(paste0(SAVE_LOCATION, "titan-fmad-proportion-GPU.png"), dpi = 300))
 
 ggplot(propData) +
     geom_point(aes(N, totalProp, color=functType)) +
@@ -79,7 +82,9 @@ ggplot(propData) +
     geom_hline(yintercept = 1) +
     theme(legend.position="bottom") + 
     defaultTheme
-ggsave(paste0(SAVE_LOCATION, "titan-fmad-proportion-Total.png"), dpi = 300)
+ifelse(SAVE, ggsave(paste0(SAVE_LOCATION, "titan-fmad-proportion-Total.png"), dpi = 300))
+
+rm(propData)
 
 ### Float runs ###
 
@@ -98,13 +103,16 @@ ggplot(varyTypeData[varyTypeData$config == "fmad",]) +
     geom_point(aes(N, time, colour=machine)) +
     geom_line(aes(N, time, color=machine, linetype=type)) +
     defaultTheme + machineLabs
-ggsave(paste0(SAVE_LOCATION, "double-float-comparison-fmad.png"), dpi = 300)
+ifelse(SAVE, ggsave(paste0(SAVE_LOCATION, "double-float-comparison-fmad.png"), dpi = 300), NA)
 
 ggplot(varyTypeData[varyTypeData$config == "nofmad",]) +
     geom_point(aes(N, time, colour=machine)) +
     geom_line(aes(N, time, color=machine, linetype=type)) +
     defaultTheme + machineLabs
-ggsave(paste0(SAVE_LOCATION, "double-float-comparison-nofmad.png"), dpi = 300)
+ifelse(SAVE, ggsave(paste0(SAVE_LOCATION, "double-float-comparison-nofmad.png"), dpi = 300), NA)
+
+
+rm(varyTypeData)
 
 ### ChunkSize runs ###
 
@@ -114,6 +122,10 @@ chunkSizeData = chunkSizeData[chunkSizeData$config == "fmad",]
 n2000Data = chunkSizeData[chunkSizeData$N == 2000,]
 n32000Data = chunkSizeData[chunkSizeData$N == 32000,]
 
+rm(chunkSizeData)
+rm(n2000Data)
+rm(n32000Data)
+
 # Filter times
 
 filterData = read.csv("filterTimes.csv")
@@ -122,8 +134,10 @@ ggplot(filterData, ) +
     geom_line(aes(N, avgTime)) +
     labs(x = "N", y = "Average time (per step) to qsort") +
     defaultTheme
-ggsave(paste0(SAVE_LOCATION, "avgSortTime.png"), dpi = 300)
-    
+ifelse(SAVE, ggsave(paste0(SAVE_LOCATION, "avgSortTime.png"), dpi = 300), NA)
+
+rm(filterData)
+
 # Divergence analysis
 
 diverged = read.csv("divergedParticles.csv")
@@ -135,4 +149,6 @@ ggplot(diverged) +
     labs(x = "Step number", y = "Particles diverged") +
     xlim(0, 175) + 
     defaultTheme
-ggsave(paste0(SAVE_LOCATION, "divergedParticles.png"), dpi = 300)
+ifelse(SAVE, ggsave(paste0(SAVE_LOCATION, "divergedParticles.png"), dpi = 300), NA)
+
+rm(diverged)
