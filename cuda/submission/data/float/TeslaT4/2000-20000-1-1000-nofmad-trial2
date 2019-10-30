@@ -1,0 +1,40 @@
+==42850== NVPROF is profiling process 42850, command: ./withfMad
+==42850== Profiling application: ./withfMad
+==42850== Profiling result:
+"Type","Time(%)","Time","Calls","Avg","Min","Max","Name"
+,%,ms,,us,us,us,
+"GPU activities",80.153632,537.453964,1000,537.453000,409.503000,896.798000,"settleCollision(void)"
+"GPU activities",10.809747,72.482570,1000,72.482000,69.215000,134.272000,"checkCollision(void)"
+"GPU activities",8.433704,56.550496,1000,56.550000,39.872000,777.151000,"checkWallCollision(void)"
+"GPU activities",0.601996,4.036563,1000,4.036000,1.504000,126.240000,"updateParticles(void)"
+"GPU activities",0.000921,0.006176,7,0.882000,0.768000,1.216000,"[CUDA memcpy HtoD]"
+"API calls",75.159049,664.406827,2000,332.203000,104.193000,1559.800000,"cudaDeviceSynchronize"
+"API calls",21.293404,188.233927,1,188233.927000,188233.927000,188233.927000,"cuDevicePrimaryCtxRetain"
+"API calls",3.340112,29.526626,4000,7.381000,5.810000,29.497000,"cudaLaunchKernel"
+"API calls",0.068784,0.608048,1,608.048000,608.048000,608.048000,"cuDeviceTotalMem"
+"API calls",0.052556,0.464598,96,4.839000,0.147000,207.013000,"cuDeviceGetAttribute"
+"API calls",0.046983,0.415331,4,103.832000,28.542000,254.848000,"cudaMallocManaged"
+"API calls",0.015480,0.136845,7,19.549000,13.602000,46.773000,"cudaMemcpyToSymbol"
+"API calls",0.012877,0.113832,4,28.458000,8.088000,60.283000,"cudaFree"
+"API calls",0.006546,0.057869,1,57.869000,57.869000,57.869000,"cuDeviceGetName"
+"API calls",0.002192,0.019374,11,1.761000,1.297000,4.326000,"cuModuleGetGlobal"
+"API calls",0.000703,0.006216,4,1.554000,0.762000,3.792000,"cuModuleGetFunction"
+"API calls",0.000603,0.005329,1,5.329000,5.329000,5.329000,"cuDeviceGetPCIBusId"
+"API calls",0.000179,0.001583,1,1.583000,1.583000,1.583000,"cuCtxSetCurrent"
+"API calls",0.000162,0.001431,3,0.477000,0.167000,1.066000,"cuDeviceGetCount"
+"API calls",0.000161,0.001420,2,0.710000,0.160000,1.260000,"cuDeviceGet"
+"API calls",0.000148,0.001305,2,0.652000,0.351000,0.954000,"cuCtxGetCurrent"
+"API calls",0.000032,0.000287,1,0.287000,0.287000,0.287000,"cuDeviceGetUuid"
+"API calls",0.000030,0.000261,1,0.261000,0.261000,0.261000,"cuCtxGetDevice"
+
+==42850== Unified Memory profiling result:
+"Device","Count","Avg Size","Min Size","Max Size","Total Size","Total Time",""
+"Tesla T4 (0)",4427,29.400391KB,4.000000KB,60.000000KB,127.105469MB,0.000000,"Host To Device"
+"Tesla T4 (0)",5330,24.419922KB,4.000000KB,60.000000KB,127.109375MB,0.000000,"Device To Host"
+"Tesla T4 (0)",,,,,2.364258KB,0.000001,"Gpu page fault groups"
+"Tesla T4 (0)",120,4.000000KB,4.000000KB,4.000000KB,,0.000000,"Memory thrashes"
+"Tesla T4 (0)",5,4.000000KB,4.000000KB,4.000000KB,,0.000000,"Remote mapping from device"
+Total CPU Page faults: 2471
+Total CPU thrashes: 120
+Total CPU throttles: 50
+Total remote mappings to CPU: 5
