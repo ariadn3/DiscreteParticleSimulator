@@ -1,0 +1,36 @@
+==280467== NVPROF is profiling process 280467, command: ./withoutfMad
+==280467== Profiling application: ./withoutfMad
+==280467== Profiling result:
+"Type","Time(%)","Time","Calls","Avg","Min","Max","Name"
+,%,s,,ms,ms,ms,
+"GPU activities",74.150095,3.758845,1000,3.758844,3.643616,4.215597,"checkCollision(void)"
+"GPU activities",23.787712,1.205856,1000,1.205855,0.927231,1.796737,"settleCollision(void)"
+"GPU activities",2.011799,0.101983,1000,0.101982,0.069374,1.303635,"checkWallCollision(void)"
+"GPU activities",0.050222,0.002546,1000,0.002545,0.002399,0.010656,"updateParticles(void)"
+"GPU activities",0.000173,0.000009,7,0.001252,0.001184,0.001568,"[CUDA memcpy HtoD]"
+"API calls",94.686518,5.060785,2000,2.530392,0.925958,5.473867,"cudaDeviceSynchronize"
+"API calls",4.502960,0.240673,1,240.673285,240.673285,240.673285,"cuDevicePrimaryCtxRetain"
+"API calls",0.748693,0.040016,4000,0.010004,0.006102,0.089019,"cudaLaunchKernel"
+"API calls",0.027315,0.001460,192,0.007603,0.000128,0.319386,"cuDeviceGetAttribute"
+"API calls",0.013201,0.000706,2,0.352786,0.334983,0.370590,"cuDeviceTotalMem"
+"API calls",0.007307,0.000391,4,0.097634,0.025720,0.210174,"cudaMallocManaged"
+"API calls",0.006728,0.000360,4,0.089897,0.016188,0.191490,"cudaFree"
+"API calls",0.004693,0.000251,7,0.035835,0.007484,0.188476,"cudaMemcpyToSymbol"
+"API calls",0.001861,0.000099,2,0.049745,0.048216,0.051275,"cuDeviceGetName"
+"API calls",0.000433,0.000023,11,0.002105,0.000656,0.014966,"cuModuleGetGlobal"
+"API calls",0.000094,0.000005,2,0.002516,0.001486,0.003546,"cuDeviceGetPCIBusId"
+"API calls",0.000089,0.000005,4,0.001183,0.000508,0.003089,"cuModuleGetFunction"
+"API calls",0.000031,0.000002,1,0.001683,0.001683,0.001683,"cuCtxSetCurrent"
+"API calls",0.000026,0.000001,3,0.000461,0.000138,0.000945,"cuDeviceGetCount"
+"API calls",0.000025,0.000001,4,0.000338,0.000168,0.000681,"cuDeviceGet"
+"API calls",0.000020,0.000001,2,0.000532,0.000293,0.000772,"cuCtxGetCurrent"
+"API calls",0.000005,0.000000,1,0.000254,0.000254,0.000254,"cuCtxGetDevice"
+
+==280467== Unified Memory profiling result:
+"Device","Count","Avg Size","Min Size","Max Size","Total Size","Total Time",""
+"TITAN V (0)",51495,20.709961KB,4.000000KB,508.000000KB,1.017056GB,0.000000,"Host To Device"
+"TITAN V (0)",22677,47.033203KB,4.000000KB,508.000000KB,1.017181GB,0.000000,"Device To Host"
+"TITAN V (0)",,,,,5.624023KB,0.000001,"Gpu page fault groups"
+"TITAN V (0)",338,4.000000KB,4.000000KB,4.000000KB,,0.000000,"Memory thrashes"
+Total CPU Page faults: 9421
+Total CPU thrashes: 338
