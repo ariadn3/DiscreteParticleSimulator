@@ -23,7 +23,7 @@ int cmpCollision(const void*, const void*);
 
 // SLAVE routines
 void SLAVE_main();
-void SLAVE_init();
+void SLAVE_init(particle_t*, int*);
 
 // COMMON routines
 void ALL_assertMalloc();
@@ -34,7 +34,7 @@ void MASTER_updateParticles();
 
 // SLAVE Computation functions
 void SLAVE_checkCollision();
-void SLAVE_settleCollision();
+void SLAVE_settleCollision(particle_t*, int*);
 
 // Simulation parameters common to all MPI processes, master or slave
 int n, s;
@@ -381,198 +381,259 @@ void MASTER_updateParticles() {
 }
 
 /**
+ * Slave main routine begins by having tea
+ */
+void SLAVE_main() {
+
+	// Buffer array of updated particles
+	particle_t* pBuffer;
+	int updatedParticles;
+
+    MASTER_init(pBuffer, &updatedParticles);
+    
+    for (int step = 1; step <= s; step++) {
+    	// Update its copy of particles from master's broadcast
+    	MPI_Bcast(ps, n, MPI_PARTICLE, MASTER_ID, MPI_COMM_WORLD);
+
+    	// Check and add collision candidates in its own area based on rank
+    	SLAVE_checkCollision();
+
+    	// Send number of collision candidates to master
+    	MPI_Gather(&numCollisions, 1, MPI_INT,
+    		NULL, NULL, MPI_INT, MASTER_ID, MPI_COMM_WORLD);
+
+        // GatherV the collision candidates back to master
+    	MPI_Gatherv(cs, numCollisions, MPI_COLLISION,
+    		NULL, NULL, NULL, MASTER_ID, MPI_COMM_WORLD);
+
+    	// Obtain number of collisions to settle
+    	MPI_Scatter(NULL, NULL, NULL,
+    		&numCollisions, 1, MPI_INT, MASTER_ID, MPI_COMM_WORLD);
+
+        // Obtain list of collisions to settle
+    	MPI_Scatterv(NULL, NULL, NULL, NULL,
+    		cs, numCollisions, MPI_COLLISION, MASTER_ID, MPI_COMM_WORLD);
+
+        // Settle them one at a time
+    	SLAVE_settleCollision(pBuffer, &updatedParticles);
+
+    	// Send number of updated particles back to master
+    	MPI_Gather(&updatedParticles, 1, MPI_INT,
+    		NULL, NULL, MPI_INT, MASTER_ID, MPI_COMM_WORLD);
+
+        // GatherV the particles back to master
+    	MPI_Gatherv(pBuffer, updatedParticles, MPI_PARTICLE,
+    		NULL, NULL, NULL, MASTER_ID, MPI_COMM_WORLD);
+
+    }
+
+    return 0;
+}
+
+/**
  * ======== EXECUTED ONLY BY SLAVE MPI PROCESSES  ========
  * Initialises memory required by slave processes to store data required for their
  * computations.
  */
-void SLAVE_init() {
+void SLAVE_init(particle_t* pBuffer, int* updatedParticles) {
+	pBuffer = (particle_t*) malloc(n * sizeof(particle_t) * 2 / NUM_SLAVES);
+	*updatedParticles = 0;
 }
 
 
 void SLAVE_checkCollision() {
+	int chunkSize = (n + NUM_SLAVES - 1)/NUM_SLAVES;
+	numCollisions = 0;
 
     // printf("%d %d % %d\n", gridDim.x, gridDim.y, blockDim.x, threadIdx.x);
     
-    int pIndex = blockIdx.x;
-    int qIndex = blockDim.x * blockIdx.y + threadIdx.x;
+    for (int i = (rank-1)*chunkSize; i < rank*chunkSize; i++) {
+    	for (int j = 0; j < n-1; j++) {
+    		if (i > (n+1)/2 || (n%2 == 0 && j < n/2))
+    			continue;
 
-    particle_t p, q;
-    
-    // Ignore excess threads beyond the row of computation
-    if (qIndex >= n) return;
+    		int pIndex = i;
+    		int qIndex = j;
 
-    // Compute upper half of triangle
-    if (qIndex > pIndex) {
-        p = ps[pIndex];
-        q = ps[qIndex];
-    } else if (n % 2 == 1 || pIndex != gridDim.x - 1) {
-        // N is odd -> reflected lower half folds correctly to form rows of length N
-        // with no excess
-        // Compute reflected lower half of triangle folded to form a row
-        p = ps[n - 2 - pIndex];
-        q = ps[n - 1 - qIndex];
-    } else {
-        // Catch case where n is even -> odd number of rows of computation when folded
-        // Ignore excess threads beyond the middle column
-        return;
-    }
+		    particle_t p, q;
 
-    // printf("Checking array computation (%d, %d)\n", p.id, q.id);
+		    // Compute upper half of triangle
+		    if (qIndex > pIndex) {
+		        p = ps[pIndex];
+		        q = ps[qIndex];
+		    } else if (n % 2 == 1 || pIndex != gridDim.x - 1) {
+		        // N is odd -> reflected lower half folds correctly to form rows of length N
+		        // with no excess
+		        // Compute reflected lower half of triangle folded to form a row
+		        p = ps[n - 2 - pIndex];
+		        q = ps[n - 1 - qIndex];
+		    } else {
+		        // Catch case where n is even -> odd number of rows of computation when folded
+		        // Ignore excess threads beyond the middle column
+		        continue;
+		    }
 
-    // Difference in X and Y positions and velocities of particles P, Q
-    double dX = q.x - p.x;
-    double dY = q.y - p.y;
-    double dVx = q.v_x - p.v_x;
-    double dVy = q.v_y - p.v_y;
+		    // printf("Checking array computation (%d, %d)\n", p.id, q.id);
 
-    // 0 <= dT <= 1 is the fraction of a time step
-    // A, B, C are the coefficients of the (dT)^2, dT and 0-th order terms in
-    // the quadratic equation describing distance between particles P, Q at time dT
-    double A = dVx * dVx + dVy * dVy;
-    double B = 2 * (dX * dVx + dY * dVy);
-    double C = dX * dX + dY * dY - 4 * r * r;
+		    // Difference in X and Y positions and velocities of particles P, Q
+		    double dX = q.x - p.x;
+		    double dY = q.y - p.y;
+		    double dVx = q.v_x - p.v_x;
+		    double dVy = q.v_y - p.v_y;
 
-    double discriminant = B * B - 4 * A * C;
+		    // 0 <= dT <= 1 is the fraction of a time step
+		    // A, B, C are the coefficients of the (dT)^2, dT and 0-th order terms in
+		    // the quadratic equation describing distance between particles P, Q at time dT
+		    double A = dVx * dVx + dVy * dVy;
+		    double B = 2 * (dX * dVx + dY * dVy);
+		    double C = dX * dX + dY * dY - 4 * r * r;
 
-    if (discriminant <= 0) {
-        return;
-    }
-    
-    // Distance curve y = d(t) is concave up and intersects y = 2r at two points
-    // First intersect (root) is at smaller dT and we only compute this
+		    double discriminant = B * B - 4 * A * C;
 
-    // Possible that two particles are currently phasing through (i.e. d(0) < 2r)
-    // since only 1 collision was computed per particle -> we ignore any first roots
-    // that are dT < 0
-    double dT = (-B - sqrt(discriminant)) / 2 / A;
+		    if (discriminant <= 0) {
+		        return;
+		    }
+		    
+		    // Distance curve y = d(t) is concave up and intersects y = 2r at two points
+		    // First intersect (root) is at smaller dT and we only compute this
 
-    // Add a collision candidate if P, Q would collide during this time step
-    if (dT >= 0 && dT <= 1) {
-        // atomicAdd returns the previous value of that address - we use this as a
-        // ticket for this thread to write a collision to that specific index
-        // Implicitly serves as a critical section
-        int i = atomicAdd(&numCollisions, 1);
-        // printf("CS%d: p-p added by block %d thread %d\n", i, pIndex, qIndex); 
-        
-        cs[i].p = &ps[p.id];
-        cs[i].q = &ps[q.id];
-        cs[i].time = dT;
+		    // Possible that two particles are currently phasing through (i.e. d(0) < 2r)
+		    // since only 1 collision was computed per particle -> we ignore any first roots
+		    // that are dT < 0
+		    double dT = (-B - sqrt(discriminant)) / 2 / A;
+
+		    // Add a collision candidate if P, Q would collide during this time step
+		    if (dT >= 0 && dT <= 1) {
+		        // printf("CS%d: p-p added by block %d thread %d\n", i, pIndex, qIndex); 
+		        
+		        cs[numCollisions].pId = p.id;
+		        cs[numCollisions].qId = q.id;
+		        cs[numCollisions].time = dT;
+		        numCollisions++;
+		    }
+    	}
     }
 }
 
 // Moves particles involved in a collision to their rightful place after the timestep
-void SLAVE_settleCollision() {
-    int collIndex = blockIdx.x * blockDim.x + threadIdx.x;
-    
-    if (collIndex >= numCollisions)
-        return;
-    
-    collision_t curCollision = cs[collIndex];
+void SLAVE_settleCollision(particle_t* pBuffer, int* updatedParticles) {
 
-    // Particles A and B (null if wall collision) in this collision
-    particle_t* A = curCollision.p;
-    particle_t* B = curCollision.q;
-    double time = curCollision.time;
+	*updatedParticles = 0;
+	for (int collIndex = 0; collIndex < numCollisions; collIndex++) {
+	    
+	    collision_t curCollision = cs[collIndex];
 
-    // Advance A by the fractional time step dT until collision occurs
-    A->x += time * A->v_x;
-    A->y += time * A->v_y;
+	    // Particles A and B (null if wall collision) in this collision
+	    particle_t A = ps[curCollision.pId];
+	    particle_t B = ps[curCollision.qId];
+	    double time = curCollision.time;
 
-    // If the collision is against the wall, toggle directions
-    if (B == NULL) {
-        // Add to wall collision counter of A
-        A->w_collisions += 1;
-        // printf("Step %.14lf: particle %d collided with wall\n", time, A->id);
-        if (A->x <= minPosMargin || A->x >= maxPosMargin)
-            A->v_x = A->v_x * -1;
-        if (A->y <= minPosMargin || A->y >= maxPosMargin)
-            A->v_y = A->v_y * -1;
-    }
-    // If collision is against another particle
-    else {
-        // Add to particle collision counters of both A and B
-        A->p_collisions += 1;
-        B->p_collisions += 1;
-        // printf("Step %.14lf: particle %d collided with particle %d\n",
-        //        time, A->id, B->id);
-        // Advance B by dT until collision occurs
-        B->x += time * B->v_x;
-        B->y += time * B->v_y;
+	    // Advance A by the fractional time step dT until collision occurs
+	    A->x += time * A->v_x;
+	    A->y += time * A->v_y;
 
-        // Compute distance between A, B
-        double distance = sqrt(pow(B->x - A->x, 2) + pow(B->y - A->y, 2));
+	    // If the collision is against the wall, toggle directions
+	    if (B == NULL) {
+	        // Add to wall collision counter of A
+	        A->w_collisions += 1;
+	        // printf("Step %.14lf: particle %d collided with wall\n", time, A->id);
+	        if (A->x <= minPosMargin || A->x >= maxPosMargin)
+	            A->v_x = A->v_x * -1;
+	        if (A->y <= minPosMargin || A->y >= maxPosMargin)
+	            A->v_y = A->v_y * -1;
+	    }
+	    // If collision is against another particle
+	    else {
+	        // Add to particle collision counters of both A and B
+	        A->p_collisions += 1;
+	        B->p_collisions += 1;
+	        // printf("Step %.14lf: particle %d collided with particle %d\n",
+	        //        time, A->id, B->id);
+	        // Advance B by dT until collision occurs
+	        B->x += time * B->v_x;
+	        B->y += time * B->v_y;
 
-        // Compute normal and tangent unit vectors along x-, y-axes
-        double n_x = (B->x - A->x) / distance;
-        double n_y = (B->y - A->y) / distance;
-        double t_x = -n_y;
-        double t_y = n_x;
+	        // Compute distance between A, B
+	        double distance = sqrt(pow(B->x - A->x, 2) + pow(B->y - A->y, 2));
 
-        // Compute new normal and tangent unit vectors for particles A, B
-        double v_an = n_x * A->v_x + n_y * A->v_y;
-        double v_at = t_x * A->v_x + t_y * A->v_y;
-        double v_bn = n_x * B->v_x + n_y * B->v_y;
-        double v_bt = t_x * B->v_x + t_y * B->v_y;
+	        // Compute normal and tangent unit vectors along x-, y-axes
+	        double n_x = (B->x - A->x) / distance;
+	        double n_y = (B->y - A->y) / distance;
+	        double t_x = -n_y;
+	        double t_y = n_x;
 
-        // printf("n_x = %.14f, n_y = %.14f\n", n_x, n_y);
-        // printf("t_x = %.14f, t_y = %.14f\n", t_x, t_y);
-        // printf("v_an = %.14f, v_at = %.14f\n", v_an, v_at);
-        // printf("v_bn = %.14f, v_bt = %.14f\n", v_bn, v_bt);
+	        // Compute new normal and tangent unit vectors for particles A, B
+	        double v_an = n_x * A->v_x + n_y * A->v_y;
+	        double v_at = t_x * A->v_x + t_y * A->v_y;
+	        double v_bn = n_x * B->v_x + n_y * B->v_y;
+	        double v_bt = t_x * B->v_x + t_y * B->v_y;
 
-        // printf("Pre-collision velocities: %.14f, %.14f, %.14f, %.14f\n",
-        //    A->v_x, A->v_y, B->v_x, B->v_y);
+	        // printf("n_x = %.14f, n_y = %.14f\n", n_x, n_y);
+	        // printf("t_x = %.14f, t_y = %.14f\n", t_x, t_y);
+	        // printf("v_an = %.14f, v_at = %.14f\n", v_an, v_at);
+	        // printf("v_bn = %.14f, v_bt = %.14f\n", v_bn, v_bt);
 
-        // Update resultant velocities along x- and y-axes for particles A, B
-        A->v_x = v_bn * n_x + v_at * t_x;
-        A->v_y = v_bn * n_y + v_at * t_y;
-        B->v_x = v_an * n_x + v_bt * t_x;
-        B->v_y = v_an * n_y + v_bt * t_y;
+	        // printf("Pre-collision velocities: %.14f, %.14f, %.14f, %.14f\n",
+	        //    A->v_x, A->v_y, B->v_x, B->v_y);
 
-        // printf("Post-collision velocities: %.14f, %.14f, %.14f, %.14f\n",
-        //    A->v_x, A->v_y, B->v_x, B->v_y);
+	        // Update resultant velocities along x- and y-axes for particles A, B
+	        A->v_x = v_bn * n_x + v_at * t_x;
+	        A->v_y = v_bn * n_y + v_at * t_y;
+	        B->v_x = v_an * n_x + v_bt * t_x;
+	        B->v_y = v_an * n_y + v_bt * t_y;
 
-        // If particle B will collide against the wall, check when it will collide 
-        // with the nearest wall and take that time
-        double time_bx = 1 - time, time_by = 1 - time;
-        if (B->v_x != 0) {
-            if (B->x + time_bx * B->v_x < r) time_bx = -(B->x - r) / B->v_x;
-            else if (B->x + time_bx * B->v_x > maxPos)
-                time_bx = (maxPos - B->x) / B->v_x;
-        }
+	        // printf("Post-collision velocities: %.14f, %.14f, %.14f, %.14f\n",
+	        //    A->v_x, A->v_y, B->v_x, B->v_y);
 
-        if (B->v_y != 0) {
-            if (B->y + time_by * B->v_y < r) time_by = -(B->y - r) / B->v_y;
-            else if (B->y + time_by * B->v_y > maxPos)
-                time_by = (maxPos - B->y) / B->v_y;
-        }
+	        // If particle B will collide against the wall, check when it will collide 
+	        // with the nearest wall and take that time
+	        double time_bx = 1 - time, time_by = 1 - time;
+	        if (B->v_x != 0) {
+	            if (B->x + time_bx * B->v_x < r) time_bx = -(B->x - r) / B->v_x;
+	            else if (B->x + time_bx * B->v_x > maxPos)
+	                time_bx = (maxPos - B->x) / B->v_x;
+	        }
 
-        // If B collides with two walls after colliding with A, take lesser of
-        // two times
-        double time_b = (time_bx < time_by) ? time_bx : time_by;
+	        if (B->v_y != 0) {
+	            if (B->y + time_by * B->v_y < r) time_by = -(B->y - r) / B->v_y;
+	            else if (B->y + time_by * B->v_y > maxPos)
+	                time_by = (maxPos - B->y) / B->v_y;
+	        }
 
-        B->x += time_b * B->v_x;
-        B->y += time_b * B->v_y;
-    }
+	        // If B collides with two walls after colliding with A, take lesser of
+	        // two times
+	        double time_b = (time_bx < time_by) ? time_bx : time_by;
 
-    // If particle A will collide against the wall, check when it will collide
-    // with the nearest wall and take that time
-    double time_ax = 1 - time;
-    double time_ay = 1 - time;
-    
-    if (A->v_x != 0) {
-        if (A->x + time_ax * A->v_x < r) time_ax = -(A->x - r) / A->v_x;
-        else if (A->x + time_ax * A->v_x > maxPos) time_ax = (maxPos - A->x) / A->v_x;
-    }
+	        B->x += time_b * B->v_x;
+	        B->y += time_b * B->v_y;
 
-    if (A->v_y != 0) {
-        if (A->y + time_ay * A->v_y < r) time_ay = -(A->y - r)/ A->v_y;
-        else if (A->y + time_ay * A->v_y > maxPos) time_ay = (maxPos - A->y) / A->v_y;
-    }
+	        pBuffer[*numCollisions] = B;
+	        (*numCollisions)++;
+	    }
 
-    // If A collides with another wall after colliding, take lesser of two times
-    double time_a = (time_ax < time_ay) ? time_ax : time_ay;
+	    // If particle A will collide against the wall, check when it will collide
+	    // with the nearest wall and take that time
+	    double time_ax = 1 - time;
+	    double time_ay = 1 - time;
+	    
+	    if (A->v_x != 0) {
+	        if (A->x + time_ax * A->v_x < r) time_ax = -(A->x - r) / A->v_x;
+	        else if (A->x + time_ax * A->v_x > maxPos) time_ax = (maxPos - A->x) / A->v_x;
+	    }
 
-    A->x += time_a * A->v_x;
-    A->y += time_a * A->v_y;
+	    if (A->v_y != 0) {
+	        if (A->y + time_ay * A->v_y < r) time_ay = -(A->y - r)/ A->v_y;
+	        else if (A->y + time_ay * A->v_y > maxPos) time_ay = (maxPos - A->y) / A->v_y;
+	    }
+
+	    // If A collides with another wall after colliding, take lesser of two times
+	    double time_a = (time_ax < time_ay) ? time_ax : time_ay;
+
+	    A->x += time_a * A->v_x;
+	    A->y += time_a * A->v_y;
+
+	    pBuffer[*numCollisions] = A;
+	    (*numCollisions)++;
+	}
 }
 
