@@ -7,44 +7,24 @@
 #define NO_COLLISION 2
 #define EDGE_TOLERANCE 1e-8
 
-__host__ void simulate();
-__host__ void printAll(bool, int);
-__host__ void resolveValidCollisions(collision_t*, int*, double, double);
-__host__ void filterCollisions();
-__host__ int cmpCollision(const void*, const void*);
+void simulate();
+void printAll(bool, int);
+void resolveValidCollisions(collision_t*, int*, double, double);
+void filterCollisions();
+int cmpCollision(const void*, const void*);
 
-__global__ void checkWallCollision();
-__global__ void checkCollision();
-__global__ void updateParticles();
-__global__ void settleCollision();
-
-int hostN, hostS;
-double hostL, hostR;
-bool willPrint;
-
-cudaError_t allocStatus;
-
-// Shared simulation parameters
-__constant__ int n, s;
-__constant__ double l, r;
-__constant__ double minPosMargin, maxPosMargin;
-__constant__ double maxPos;
+void MASTER_checkWallCollision();
+void SLAVE_checkCollision();
+void MASTER_updateParticles();
+void SLAVE_settleCollision();
 
 // Shared data
-__managed__ int numCollisions;
-__managed__ particle_t* ps;
-__managed__ bool* states;
-__managed__ collision_t* cs;
+int numCollisions;
+particle_t* ps;
+bool* states;
+collision_t* cs;
 
-__host__ void assertMallocSuccess(char* buff) {
-    if (allocStatus != cudaSuccess) {
-        printf("Failed to dynamically allocate memory for %s\n", buff);
-        printf("%s\n", cudaGetErrorString(allocStatus));
-        exit(1);
-    }
-}
-
-__host__ int main(int argc, char** argv) {
+int main(int argc, char** argv) {
     // Read in N, L, r, S and finally simulation mode
     scanf("%d\n%lf\n%lf\n%d\n", &hostN, &hostL, &hostR, &hostS);
     char* buffer = (char*) malloc(sizeof(char) * 140);
@@ -127,7 +107,7 @@ __host__ int main(int argc, char** argv) {
     return 0;
 }
 
-__host__ void simulate() {
+void simulate() {
     // Unconditionally print the starting state of the simulation
     printAll(false, 0);
     
@@ -179,7 +159,7 @@ __host__ void simulate() {
     }
 }
 
-__host__ void printAll(bool includeCollisions, int step) {
+void printAll(bool includeCollisions, int step) {
     for (int i = 0; i < hostN; i++) {
         char* details;
         if (includeCollisions) {
@@ -193,7 +173,7 @@ __host__ void printAll(bool includeCollisions, int step) {
 }
 
 // Filters the collisions according to the time that it took place
-__host__ void filterCollisions() {
+void filterCollisions() {
     // Quicksort all collision candidates with the comparator function
     qsort(cs, numCollisions, sizeof(collision_t), cmpCollision);
 
@@ -225,7 +205,7 @@ __host__ void filterCollisions() {
 }
 
 // Comparator for sorting collisions, earlier time then smaller particle 'p' id
-__host__ int cmpCollision(const void* collisionA, const void* collisionB) {
+int cmpCollision(const void* collisionA, const void* collisionB) {
     collision_t firstCollision = *(collision_t*) collisionA;
     collision_t secondCollision = *(collision_t*) collisionB;
    
@@ -246,7 +226,7 @@ __host__ int cmpCollision(const void* collisionA, const void* collisionB) {
     }
 }
 
-__global__ void checkWallCollision() {
+void checkWallCollision() {
     int index = blockIdx.x * blockDim.x + threadIdx.x;
     
     if (index >= n)
@@ -306,7 +286,7 @@ __global__ void checkWallCollision() {
     }
 }
 
-__global__ void checkCollision() {
+void checkCollision() {
 
     // printf("%d %d % %d\n", gridDim.x, gridDim.y, blockDim.x, threadIdx.x);
     
@@ -378,7 +358,7 @@ __global__ void checkCollision() {
 }
 
 // Moves particles involved in a collision to their rightful place after the timestep
-__global__ void settleCollision() {
+void settleCollision() {
     int collIndex = blockIdx.x * blockDim.x + threadIdx.x;
     
     if (collIndex >= numCollisions)
@@ -494,7 +474,7 @@ __global__ void settleCollision() {
 }
 
 // Updates particles not involved in any collision
-__global__ void updateParticles() {
+void updateParticles() {
     int index = blockIdx.x * blockDim.x + threadIdx.x;
 
     if (index >= n)

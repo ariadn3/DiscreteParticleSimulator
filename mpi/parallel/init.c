@@ -1,7 +1,7 @@
 #include "init.h"
 
 // Randomly generates an array of particles
-__host__ void randomiseParticles(particle_t* particleArray, int slowFactor, int n,
+void randomiseParticles(particle_t* particleArray, int slowFactor, int n,
         double L, double r) {
     double* posArray = generatePosition(n, L, r);
     double* veloArray = generateVelocity(slowFactor, n, L, r);
@@ -21,7 +21,7 @@ __host__ void randomiseParticles(particle_t* particleArray, int slowFactor, int 
 }
 
 // Generates an array of non-overlapping position values
-__host__ double* generatePosition(int n, double L, double r) {
+double* generatePosition(int n, double L, double r) {
     static double* posArray;
     posArray = (double*) malloc(n * 2 * sizeof(double));
     srand(SEED);
@@ -57,7 +57,7 @@ __host__ double* generatePosition(int n, double L, double r) {
 }
 
 // Generates an array of velocity values
-__host__ double* generateVelocity(int slowFactor, int n, double L, double r) {
+double* generateVelocity(int slowFactor, int n, double L, double r) {
     static double* veloArray;
     veloArray = (double*) malloc(n * 2 * sizeof(double));
     
