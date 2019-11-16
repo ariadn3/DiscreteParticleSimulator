@@ -38,14 +38,14 @@ double* generatePosition(int n, double L, double r) {
     // Bounds for generating positions
     double minPos = r, maxPos = L - r, posRange = maxPos - minPos;
     for (int i = 0; i < n; i++) {
-        while (true) {
+        while (1) {
             posArray[2 * i] = minPos + posRange * (rand() / (double)RAND_MAX);
             posArray[2 * i +1] = minPos + posRange * (rand() / (double)RAND_MAX);
-            bool flag = true;
+            int flag = 1;
             for (int j = 0; j < i; j++) {
                 if (2 * r > sqrt(pow(posArray[2 * i] - posArray[2 * j], 2)
                             + pow(posArray[2 * i + 1] - posArray[2 * j + 1], 2))) {
-                    flag = false;
+                    flag = 0;
                     break;
                 }
             }

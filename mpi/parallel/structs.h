@@ -5,6 +5,9 @@
 #include <stdlib.h>
 #include <string.h>
 
+// Collisions with a wall do not have a number
+#define WALL -1
+
 typedef struct {
     int id;
     double x;
