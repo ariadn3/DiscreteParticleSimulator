@@ -58,8 +58,8 @@ double minMargin, maxMargin, max;
 int zero = 0;
 int numProcs;
 int rank;           // Unique to each MPI process
-MPI_Datatype MPI_PARTICLE;
-MPI_Datatype MPI_COLLISION;
+MPI_Datatype MP_PARTICLE;
+MPI_Datatype MP_COLLISION;
 
 int main(int argc, char** argv) {
 
@@ -71,16 +71,19 @@ int main(int argc, char** argv) {
 
     // Create the MPI struct representations for a particle and collision
     int particleBlockLengths[3] = {1, 4, 2};
-    MPI_Aint particleBlockOffsets[3] = {0, 1, 5};
+    MPI_Aint particleBlockOffsets[3] = {0, 4, 20};
     MPI_Datatype particleBlockTypes[3] = {MPI_INT, MPI_DOUBLE, MPI_INT};
     MPI_Type_create_struct(3, particleBlockLengths,
-            particleBlockOffsets, particleBlockTypes, &MPI_PARTICLE);
+            particleBlockOffsets, particleBlockTypes, &MP_PARTICLE);
 
     int collisionBlockLengths[2] = {2, 1};
-    MPI_Aint collisionBlockOffsets[2] = {0, 2};
+    MPI_Aint collisionBlockOffsets[2] = {0, 8};
     MPI_Datatype collisionBlockTypes[2] = {MPI_INT, MPI_DOUBLE};
-    MPI_Type_create_struct(1, collisionBlockLengths,
-            collisionBlockOffsets, collisionBlockTypes, &MPI_COLLISION);
+    MPI_Type_create_struct(2, collisionBlockLengths,
+            collisionBlockOffsets, collisionBlockTypes, &MP_COLLISION);
+
+    MPI_Type_commit(&MP_PARTICLE);
+    MPI_Type_commit(&MP_COLLISION);
 
     // Master (rank 0) process executes master routine and initialises simulation
     if (rank == MASTER_ID) {
@@ -130,18 +133,25 @@ void MASTER_main() {
 
     MASTER_init(&printMode, states, numItems, displc);
 
-    MASTER_printAll(FALSE, 0);
+    // Prevent any slaves from initialising since master needs to initialise simulation
+    MPI_Barrier(MPI_COMM_WORLD);
 
+    MPI_Bcast(&n, 1, MPI_INT, MASTER_ID, MPI_COMM_WORLD); 
+    MPI_Bcast(&l, 1, MPI_DOUBLE, MASTER_ID, MPI_COMM_WORLD);
+    MPI_Bcast(&r, 1, MPI_DOUBLE, MASTER_ID, MPI_COMM_WORLD);
+    MPI_Bcast(&s, 1, MPI_INT, MASTER_ID, MPI_COMM_WORLD);
+
+    MASTER_printAll(FALSE, 0);
+    
     // Synchronise to ensure all slaves have completed initialisation
     MPI_Barrier(MPI_COMM_WORLD);
 
     // ======== MAIN BODY OF THE SIMULATION ========
     for (int step = 1; step <= s; step++) {
-
         // ===== BROADCAST UPDATED PARTICLE DATA TO ALL SLAVES =====
         // Slaves will divide all the work of computing particle-particle collisions
         // among themselves; master will concurrently compute particle-wall collisions
-        MPI_Bcast(ps, n, MPI_FLOAT, MASTER_ID, MPI_COMM_WORLD);
+        MPI_Bcast(ps, n, MP_PARTICLE, MASTER_ID, MPI_COMM_WORLD);
 
         // Master concurrently computes particle-wall collisions
         numCollisions = 0;
@@ -152,11 +162,15 @@ void MASTER_main() {
 
         // Collect the collision candidates from all MPI processes (master included)
         // back into the master's array of collision candidates
+        printf("ok\n");
         MPI_Gather(&numCollisions, 1, MPI_INT,
-                numItems, 1, MPI_INT, MASTER_ID, MPI_COMM_WORLD);
+                numItems, 100, MPI_INT, MASTER_ID, MPI_COMM_WORLD);
+        printf("%d %d\n", numItems[0], numItems[1]);
         MASTER_buildDisplacement(numItems, displc);
-        MPI_Gatherv(cs, numCollisions, MPI_COLLISION,
-                cs, numItems, displc, MPI_COLLISION, MASTER_ID, MPI_COMM_WORLD);
+        printf("ok\n");
+        MPI_Gatherv(cs, numCollisions, MP_COLLISION,
+                cs, numItems, displc, MP_COLLISION, MASTER_ID, MPI_COMM_WORLD);
+        printf("ok\n");
 
         // ===== FILTER COLLISION CANDIDATES TO VALID COLLISION =====
         MASTER_filterCollisions(states);
@@ -170,8 +184,8 @@ void MASTER_main() {
         MPI_Scatter(&numItems, 1, MPI_INT,
                 &numCollisions, 1, MPI_INT, MASTER_ID, MPI_COMM_WORLD);
         MASTER_divideCollisions(numItems, displc);
-        MPI_Scatterv(cs, numItems, displc, MPI_COLLISION,
-                cs, 0, MPI_COLLISION, MASTER_ID, MPI_COMM_WORLD);
+        MPI_Scatterv(cs, numItems, displc, MP_COLLISION,
+                cs, 0, MP_COLLISION, MASTER_ID, MPI_COMM_WORLD);
 
         MASTER_updateParticles(states);
 
@@ -184,8 +198,8 @@ void MASTER_main() {
         MPI_Gather(&zero, 1, MPI_INT,
                 numItems, 1, MPI_INT, MASTER_ID, MPI_COMM_WORLD);
         MASTER_buildDisplacement(numItems, displc);
-        MPI_Gatherv(pBuffer, 0, MPI_PARTICLE,
-                pBuffer, numItems, displc, MPI_PARTICLE, MASTER_ID, MPI_COMM_WORLD);
+        MPI_Gatherv(pBuffer, 0, MP_PARTICLE,
+                pBuffer, numItems, displc, MP_PARTICLE, MASTER_ID, MPI_COMM_WORLD);
 
         MASTER_mergeResolvedParticles(pBuffer);
 
@@ -255,7 +269,7 @@ void MASTER_init(int* mode, int* states, int* numItems, int* displc) {
     // Determine if there is a need to randomise particles
     int i;
     double x, y, v_x, v_y;
-    int isInitialised = 0;
+    int isInitialised = FALSE;
 
     // MASTER: allocates its own array of particle structs
     ps = (particle_t*) malloc(n * sizeof(particle_t));
@@ -264,7 +278,7 @@ void MASTER_init(int* mode, int* states, int* numItems, int* displc) {
 
     // If initial positions and velocities of particles are provided, read them
     while (fgets(buffer, 140, stdin) != NULL) {
-        isInitialised = 1;
+        isInitialised = TRUE;
         sscanf(buffer, "%d %lf %lf %lf %lf", &i, &x, &y, &v_x, &v_y);
         ps[i].id = i;
         ps[i].x = x;
@@ -276,7 +290,7 @@ void MASTER_init(int* mode, int* states, int* numItems, int* displc) {
     }
 
     // Otherwise randomise the initial positions and velocities
-    if (isInitialised > 0) randomiseParticles(ps, SLOW_FACTOR, n, l, r);
+    if (isInitialised == FALSE) randomiseParticles(ps, SLOW_FACTOR, n, l, r);
 
     minMargin = r + EDGE_TOLERANCE;
     maxMargin = l - r - EDGE_TOLERANCE;
@@ -298,12 +312,12 @@ void MASTER_init(int* mode, int* states, int* numItems, int* displc) {
     ALL_assertMalloc((void*) cs, buffer);
 
     // MASTER: allocates array of integers to use with MPI_Gatherv
-    numItems = (int*) malloc((int) numProcs * sizeof(int));
+    numItems = (int*) malloc(numProcs * sizeof(int));
     sprintf(buffer, "int* numItems");
     ALL_assertMalloc((void*) numItems, buffer);
 
     // MASTER: allocates displacement array of itnegers to use with MPI_Gatherv
-    displc = (int*) malloc((int) numProcs * sizeof(int));
+    displc = (int*) malloc(numProcs * sizeof(int));
     sprintf(buffer, "int* displc");
     ALL_assertMalloc((void*) displc, buffer);
 
@@ -478,11 +492,20 @@ void SLAVE_main() {
 
     int numParticlesUpdated;
 
+    MPI_Barrier(MPI_COMM_WORLD);
+    
+    MPI_Bcast(&n, 1, MPI_INT, MASTER_ID, MPI_COMM_WORLD); 
+    MPI_Bcast(&l, 1, MPI_DOUBLE, MASTER_ID, MPI_COMM_WORLD);
+    MPI_Bcast(&r, 1, MPI_DOUBLE, MASTER_ID, MPI_COMM_WORLD);
+    MPI_Bcast(&s, 1, MPI_INT, MASTER_ID, MPI_COMM_WORLD);
+
     SLAVE_init();
+    
+    MPI_Barrier(MPI_COMM_WORLD);
 
     for (int step = 1; step <= s; step++) {
         // Update its copy of particles from master's broadcast
-        MPI_Bcast(ps, n, MPI_PARTICLE, MASTER_ID, MPI_COMM_WORLD);
+        MPI_Bcast(ps, n, MP_PARTICLE, MASTER_ID, MPI_COMM_WORLD);
 
         // Check and add collision candidates in its own area based on rank
         SLAVE_checkCollisions();
@@ -495,16 +518,16 @@ void SLAVE_main() {
                 NULL, 0, MPI_INT, MASTER_ID, MPI_COMM_WORLD);
 
         // Gatherv the collision candidates back to master
-        MPI_Gatherv(cs, numCollisions, MPI_COLLISION,
-                NULL, NULL, NULL, MPI_COLLISION, MASTER_ID, MPI_COMM_WORLD);
+        MPI_Gatherv(cs, numCollisions, MP_COLLISION,
+                NULL, NULL, NULL, MP_COLLISION, MASTER_ID, MPI_COMM_WORLD);
 
         // Obtain number of collisions to settle
         MPI_Scatter(NULL, 0, MPI_INT,
                 &numCollisions, 1, MPI_INT, MASTER_ID, MPI_COMM_WORLD);
 
         // Obtain list of collisions to settle
-        MPI_Scatterv(NULL, NULL, NULL, MPI_COLLISION,
-                cs, numCollisions, MPI_COLLISION, MASTER_ID, MPI_COMM_WORLD);
+        MPI_Scatterv(NULL, NULL, NULL, MP_COLLISION,
+                cs, numCollisions, MP_COLLISION, MASTER_ID, MPI_COMM_WORLD);
 
         // Settle them one at a time
         SLAVE_settleCollisions(&numParticlesUpdated);
@@ -517,8 +540,8 @@ void SLAVE_main() {
                 NULL, 0, MPI_INT, MASTER_ID, MPI_COMM_WORLD);
 
         // Gatherv the particles back to master
-        MPI_Gatherv(pBuffer, numParticlesUpdated, MPI_PARTICLE,
-                NULL, NULL, NULL, MPI_PARTICLE, MASTER_ID, MPI_COMM_WORLD);
+        MPI_Gatherv(pBuffer, numParticlesUpdated, MP_PARTICLE,
+                NULL, NULL, NULL, MP_PARTICLE, MASTER_ID, MPI_COMM_WORLD);
     }
 }
 
