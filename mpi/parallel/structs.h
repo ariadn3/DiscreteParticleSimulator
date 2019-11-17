@@ -10,6 +10,9 @@
 
 typedef struct {
     int id;
+    // Additional member to avoid alignment issues with MPI as C pads our struct with
+    // 4 bytes of padding anyway, for total of 48 bytes
+    int dummy;
     double x;
     double y;
     double v_x;
