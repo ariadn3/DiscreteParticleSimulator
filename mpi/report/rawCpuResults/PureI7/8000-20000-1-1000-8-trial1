@@ -1,0 +1,16 @@
+# started on Mon Nov 18 04:19:57 2019
+
+
+ Performance counter stats for 'mpirun -machinefile machineFiles/8.mf -np 8 ./a.out':
+
+    1314516.416688      task-clock (msec)         #    5.945 CPUs utilized          
+          31794334      context-switches          #    0.024 M/sec                  
+              7840      cpu-migrations            #    0.006 K/sec                  
+             15809      page-faults               #    0.012 K/sec                  
+     4369837927159      cycles                    #    3.324 GHz                    
+     5300417944203      instructions              #    1.21  insn per cycle         
+      446380090208      branches                  #  339.577 M/sec                  
+        4503361426      branch-misses             #    1.01% of all branches        
+
+     221.099713556 seconds time elapsed
+
