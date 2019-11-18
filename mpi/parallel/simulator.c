@@ -50,7 +50,7 @@ int n, s;
 double l, r;
 
 // Data common to all MPI processes, master or slave
-int numCollisions = 912;
+int numCollisions = 0;
 particle_t* ps;
 particle_t* pBuffer;
 collision_t* cs;
