@@ -112,6 +112,19 @@ filter(parData, N < 32000, configType == 'PureXeS') %>%
     defaultTheme + machineLabs
 ifelse(SAVE, ggsave(paste0(SAVE_LOCATION, "PureXeS-seqSpeedup.png"), dpi = 300), NA)
 
+filter(parData, N < 32000, configType == 'PureXeS', processes == 20) %>%
+    ggplot() +
+    geom_point(aes(N, seqSpeedup, color='XeS MPI (20 processes)')) +
+    geom_line(aes(N, seqSpeedup, color='XeS MPI (20 processes)')) +
+    geom_point(aes(N, estSpeedup, color = 'XeS OpenMP'), data = parBenchmarkData[parBenchmarkData$configType == "PureXeS",]) +
+    stat_function(fun = XeSspeedupExtrapolateFunc, aes(color = 'XeS OpenMP'), data = parBenchmarkData) +
+    geom_point(aes(N, XeSestSpeedup, color = 'XeS OpenMP'), data = extraPoints) +
+    labs(x = "N, Particle count",
+         y = "Speedup (extrapolated sequential)",
+         color = "Run config") +
+    defaultTheme
+ifelse(SAVE, ggsave(paste0(SAVE_LOCATION, "PureXeS-seqSpeedupWithOpenMP.png"), dpi = 300), NA)
+
 filter(parData, N < 32000, configType == 'PureI7') %>%
     ggplot() +
     geom_point(aes(N, wall.clock.time, color=processes)) +
@@ -130,3 +143,16 @@ filter(parData, N < 32000, configType == 'PureI7') %>%
          y = "Speedup (extrapolated sequential)") +
     defaultTheme + machineLabs
 ifelse(SAVE, ggsave(paste0(SAVE_LOCATION, "PureI7-seqSpeedup.png"), dpi = 300), NA)
+
+filter(parData, N < 32000, configType == 'PureI7', processes == 8) %>%
+    ggplot() +
+    geom_point(aes(N, seqSpeedup, color='i7 MPI (8 processes)')) +
+    geom_line(aes(N, seqSpeedup, color='i7 MPI (8 processes)')) +
+    geom_point(aes(N, estSpeedup, color = 'i7 OpenMP'), data = parBenchmarkData[parBenchmarkData$configType == "PureI7",]) +
+    stat_function(fun = I7speedupExtrapolateFunc, aes(color = 'i7 OpenMP'), data = parBenchmarkData) +
+    geom_point(aes(N, I7estSpeedup, color = 'i7 OpenMP'), data = extraPoints) +
+    labs(x = "N, Particle count",
+         y = "Speedup (extrapolated sequential)",
+         color = "Run config") +
+    defaultTheme
+ifelse(SAVE, ggsave(paste0(SAVE_LOCATION, "PureI7-seqSpeedupWithOpenMP.png"), dpi = 300), NA)
