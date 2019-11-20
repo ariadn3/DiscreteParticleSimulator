@@ -7,7 +7,7 @@
 
 #define SLOW_FACTOR 1
 #define NO_COLLISION 2
-#define EDGE_TOLERANCE 1e-14
+#define EDGE_TOLERANCE 1e-8
 
 #define FALSE 0
 #define TRUE 1
