@@ -1,4 +1,4 @@
-\title{CS3210 Assignment 1\\Particle Movement Simulator (Part 1)}
+\title{CS3210 Parallel Computing\\Assignment 1 (Part 1) Report\\[3ex]\textbf{Discrete Particle Simulation with OpenMP}\\\textcolor{BrickRed}{updated 6 October 2019}}
 \author{Keven Loo Yuquan \& Lee Yong Jie, Richard}
 \date{}
 
@@ -13,7 +13,7 @@
 \usepackage{minted}
 % Inclusion of pictures
 \usepackage{graphicx}
-\graphicspath{{./reportAssets/}{./processedResults/}{./extraProcessedResults/}}
+\graphicspath{{./reportAssets/}{./processedResults/}{./extraProcessedResults}}
 % Better looking underlines
 \usepackage{soul}
 \setuldepth{Parallel}
@@ -27,6 +27,8 @@
 \usepackage{tabularx}
 % LaTeX is dumb at deciding where figures should go
 \usepackage{float}
+% Text colours
+\usepackage[dvipsnames]{xcolor}
 
 % \bf formats a chunk of text to both texttt and textbf
 \newcommand{\bt}[1]{\texttt{\textbf{#1}}}
@@ -44,7 +46,7 @@
 The discrete particle simulation is implemented fully in C and OpenMP. The overall architecture of the simulator is summarised in the diagram below.
 
 \begin{figure}[hb]
-\includegraphics{chap1Flowchart}
+\includegraphics{./reportAssets/chap1Flowchart}
 \centering
 \end{figure}
 
@@ -443,28 +445,28 @@ All plots were generated with the help of R. The raw data from the \bt{perf stat
 
 \begin{figure}[H]
     \centering
-    \includegraphics[width=0.75\textwidth]{seq-varyN}
+    \includegraphics[width=0.75\textwidth]{./processedResults/seq-varyN}
     \caption{Plot of execution time against particle count, $N$}
     \label{fig:seq-varyN}
 \end{figure}
 
 \begin{figure}[H]
     \centering
-    \includegraphics[width=0.75\textwidth]{seq-varyL}
+    \includegraphics[width=0.75\textwidth]{./processedResults/seq-varyL}
     \caption{Plot of execution time against box length, $L$}
     \label{fig:seq-varyL}
 \end{figure}
 
 \begin{figure}[H]
     \centering
-    \includegraphics[width=0.75\textwidth]{seq-varyR}
+    \includegraphics[width=0.75\textwidth]{./processedResults/seq-varyR}
     \caption{Plot of execution time against particle radius, $r$}
     \label{fig:seq-varyR}
 \end{figure}
 
 \begin{figure}[H]
     \centering
-    \includegraphics[width=0.75\textwidth]{seq-varySteps}
+    \includegraphics[width=0.75\textwidth]{./processedResults/seq-varySteps}
     \caption{Plot of execution time against number of steps, $S$}
     \label{fig:seq-varySteps}
 \end{figure}
@@ -475,28 +477,28 @@ All plots were generated with the help of R. The raw data from the \bt{perf stat
 
 \begin{figure}[H]
     \centering
-    \includegraphics[width=0.75\textwidth]{par-250N-varyThreads}
+    \includegraphics[width=0.75\textwidth]{./processedResults/par-250N-varyThreads}
     \caption{Plot of execution time against number of threads $T$ for $N = 250$}
     \label{fig:par-250N-varyThreads}
 \end{figure}
 
 \begin{figure}[H]
     \centering
-    \includegraphics[width=0.75\textwidth]{par-500N-varyThreads}
+    \includegraphics[width=0.75\textwidth]{./processedResults/par-500N-varyThreads}
     \caption{Plot of execution time against number of threads $T$ for $N = 500$}
     \label{fig:par-500N-varyThreads}
 \end{figure}
 
 \begin{figure}[H]
     \centering
-    \includegraphics[width=0.75\textwidth]{par-1000N-varyThreads}
+    \includegraphics[width=0.75\textwidth]{./processedResults/par-1000N-varyThreads}
     \caption{Plot of execution time against number of threads $T$ for $N = 1000$}
     \label{fig:par-1000N-varyThreads}
 \end{figure}
 
 \begin{figure}[H]
     \centering
-    \includegraphics[width=0.75\textwidth]{par-2000N-varyThreads}
+    \includegraphics[width=0.75\textwidth]{./processedResults/par-2000N-varyThreads}
     \caption{Plot of execution time against number of threads $T$ for $N = 2000$}
     \label{fig:par-2000N-varyThreads}
 \end{figure}
@@ -505,35 +507,35 @@ All plots were generated with the help of R. The raw data from the \bt{perf stat
 
 \begin{figure}[H]
     \centering
-    \includegraphics[width=0.75\textwidth]{par-250N-speedup}
+    \includegraphics[width=0.75\textwidth]{./processedResults/par-250N-speedup}
     \caption{Plot of speedup against number of threads $T$ for $N = 250$}
     \label{fig:par-250N-speedup}
 \end{figure}
 
 \begin{figure}[H]
     \centering
-    \includegraphics[width=0.75\textwidth]{par-500N-speedup}
+    \includegraphics[width=0.75\textwidth]{./processedResults/par-500N-speedup}
     \caption{Plot of speedup against number of threads $T$ for $N = 500$}
     \label{fig:par-500N-speedup}
 \end{figure}
 
 \begin{figure}[H]
     \centering
-    \includegraphics[width=0.75\textwidth]{par-1000N-speedup}
+    \includegraphics[width=0.75\textwidth]{./processedResults/par-1000N-speedup}
     \caption{Plot of speedup against number of threads $T$ for $N = 1000$}
     \label{fig:par-1000N-speedup}
 \end{figure}
 
 \begin{figure}[H]
     \centering
-    \includegraphics[width=0.75\textwidth]{par-2000N-speedup}
+    \includegraphics[width=0.75\textwidth]{./processedResults/par-2000N-speedup}
     \caption{Plot of speedup against number of threads $T$ for $N = 2000$}
     \label{fig:par-2000N-speedup}
 \end{figure}
 
 \begin{figure}[H]
     \centering
-    \includegraphics[width=0.75\textwidth]{par-2000N-contextSwitches}
+    \includegraphics[width=0.75\textwidth]{./processedResults/par-2000N-contextSwitches}
     \caption{Plot of number of context switches against number of threads $T$ for $N = 2000$}
     \label{fig:par-2000N-contextSwitches}
 \end{figure}
@@ -635,7 +637,7 @@ Let us suppose all particles are bounded by a speed limit $v_{limit}$. Consider 
 
 \begin{figure}[H]
     \centering
-    \includegraphics[width=0.5\textwidth]{chap8RadOfCollision}
+    \includegraphics[width=0.5\textwidth]{./reportAssets/chap8RadOfCollision}
     \caption{Radius of collision (blue circle) for a given particle}
     \label{fig:chap8RadOfCollision}
 \end{figure}
@@ -654,7 +656,7 @@ Then, we can approximate the set of potential particles $P$ can collide with, by
 
 \begin{figure}[H]
     \centering
-    \includegraphics[width=0.5\textwidth]{chap8ApproxCollision}
+    \includegraphics[width=0.5\textwidth]{./reportAssets/chap8ApproxCollision}
     \caption{Approximate set of potential particle collision partners $G$ for a particle $P$}
     \label{fig:chap8ApproxCollision}
 \end{figure}
@@ -663,7 +665,7 @@ However, since a particle can be located anywhere within a grid cell G, we need 
 
 \begin{figure}[H]
     \centering
-    \includegraphics[width=0.5\textwidth]{chap8ExpandedSet}
+    \includegraphics[width=0.5\textwidth]{./reportAssets/chap8ExpandedSet}
     \caption{Expanded set of potential particle collision partners $G$ for a particle $P$}
     \label{fig:chap8ExpandedSet}
 \end{figure}
@@ -709,7 +711,7 @@ Suppose the particles within the box obey some velocity limit $v_{limit}$. Consi
 
 \begin{figure}[H]
     \centering
-    \includegraphics[width=0.5\textwidth]{chap8Slingshot}
+    \includegraphics[width=0.5\textwidth]{./reportAssets/chap8Slingshot}
     \caption{``Slingshot'' effect from orthogonal particle-particle collisions}
     \label{fig:chap8Slingshot}
 \end{figure}
@@ -738,7 +740,7 @@ which is dependent on $N$ and the initialisation velocity limit $v_{limit}$.
 
 \begin{figure}[H]
     \centering
-    \includegraphics[width=0.75\textwidth]{chap8Velocities}
+    \includegraphics[width=0.75\textwidth]{./reportAssets/chap8Velocities}
     \caption{Plot of particles against velocity at final step (bin size: 400 units/step)}
     \label{fig:chap8Velocities}
 \end{figure}
@@ -789,45 +791,45 @@ The dotted and solid curves represent the speedup of the parallel and early-prun
 
 \begin{figure}[H]
     \centering
-    \includegraphics[width=0.75\textwidth]{optPar-gridSize1-speedup}
+    \includegraphics[width=0.75\textwidth]{./extraProcessedResults/optPar-gridSize1-speedup}
     \caption{Plot of speedup against number of threads $T$ for grid size of $G = 1$}
     \label{fig:optPar-gridSize1-speedup}
 \end{figure}
 
 \begin{figure}[H]
     \centering
-    \includegraphics[width=0.75\textwidth]{optPar-gridSize2-speedup}
+    \includegraphics[width=0.75\textwidth]{./extraProcessedResults/optPar-gridSize2-speedup}
     \caption{Plot of speedup against number of threads $T$ for grid size of $G = 2$}
     \label{fig:optPar-gridSize2-speedup}
 \end{figure}
 
 \begin{figure}[H]
     \centering
-    \includegraphics[width=0.75\textwidth]{optPar-gridSize4-speedup}
+    \includegraphics[width=0.75\textwidth]{./extraProcessedResults/optPar-gridSize4-speedup}
     \caption{Plot of speedup against number of threads $T$ for grid size of $G = 4$}
     \label{fig:optPar-gridSize4-speedup}
 \end{figure}
 \begin{figure}[H]
     \centering
-    \includegraphics[width=0.75\textwidth]{optPar-gridSize8-speedup}
+    \includegraphics[width=0.75\textwidth]{./extraProcessedResults/optPar-gridSize8-speedup}
     \caption{Plot of speedup against number of threads $T$ for grid size of $G = 8$}
     \label{fig:optPar-gridSize8-speedup}
 \end{figure}
 \begin{figure}[H]
     \centering
-    \includegraphics[width=0.75\textwidth]{optPar-gridSize16-speedup}
+    \includegraphics[width=0.75\textwidth]{./extraProcessedResults/optPar-gridSize16-speedup}
     \caption{Plot of speedup against number of threads $T$ for grid size of $G = 16$}
     \label{fig:optPar-gridSize16-speedup}
 \end{figure}
 \begin{figure}[H]
     \centering
-    \includegraphics[width=0.75\textwidth]{optPar-gridSize32-speedup}
+    \includegraphics[width=0.75\textwidth]{./extraProcessedResults/optPar-gridSize32-speedup}
     \caption{Plot of speedup against number of threads $T$ for grid size of $G = 32$}
     \label{fig:optPar-gridSize32-speedup}
 \end{figure}
 \begin{figure}[H]
     \centering
-    \includegraphics[width=0.75\textwidth]{optPar-gridSize64-speedup}
+    \includegraphics[width=0.75\textwidth]{./extraProcessedResults/optPar-gridSize64-speedup}
     \caption{Plot of speedup against number of threads $T$ for grid size of $G = 64$}
     \label{fig:optPar-gridSize64-speedup}
 \end{figure}
