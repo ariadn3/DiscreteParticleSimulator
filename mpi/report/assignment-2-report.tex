@@ -47,7 +47,6 @@
 \tableofcontents
 
 \pagebreak
-\large{}
 \section{MPI Program Design}
 
 The discrete particle simulation is implemented fully in MPI with the master-slave pattern. The overall architecture of the simulator is summarised in Figure \ref{fig:simulator-design} below.
@@ -307,6 +306,8 @@ During the state propagation stage, the master assigns valid collisions to slave
     \caption{Blockwise assignment of rows of computation to slaves}
     \label{fig:collisionArrayAssignment}
 \end{figure}
+
+\pagebreak
 
 \subsection{Memory Considerations}
 Since each MPI process has an independent memory space, certain information about the simulation parameters must be replicated across all processes before beginning any computation. These include:
